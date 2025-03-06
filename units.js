@@ -18,12 +18,31 @@ function initUnits() {
 function createUnit(type, q, r, playerIndex) {
     const unitGroup = new THREE.Group();
 
-    // Create shadow circle
-    const shadowGeometry = new THREE.CircleGeometry(0.8, 32);
-    const shadowMaterial = new THREE.MeshBasicMaterial({
-        color: 0x000000,
+    // Create shadow circle with radial gradient
+    const shadowGeometry = new THREE.CircleGeometry(0.6, 32); // Smaller radius (0.6 instead of 0.8)
+    const shadowMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            color: { value: new THREE.Color(0x000000) }
+        },
+        vertexShader: `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `,
+        fragmentShader: `
+            uniform vec3 color;
+            varying vec2 vUv;
+            void main() {
+                float dist = length(vUv - vec2(0.5));
+                float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+                // Make center darker by using a power function
+                alpha = pow(alpha, 0.5);
+                gl_FragColor = vec4(color, alpha * 0.5);
+            }
+        `,
         transparent: true,
-        opacity: 0.3,
         side: THREE.DoubleSide
     });
     const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);

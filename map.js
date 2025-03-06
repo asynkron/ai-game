@@ -32,22 +32,22 @@ function createMap() {
 
             if (n < WATER_THRESHOLD) {
                 type = "water";
-                color = 0x0000ff;
+                color = TERRAIN_COLORS.WATER;
                 moveCost = Infinity;
                 height = WATER_BASE_HEIGHT + Math.random() * WATER_HEIGHT_VARIATION;
             } else if (n < GRASS_THRESHOLD) {
                 type = "grass";
-                color = 0x00ff00;
+                color = TERRAIN_COLORS.GRASS;
                 moveCost = 1;
                 height = GRASS_BASE_HEIGHT + Math.random() * GRASS_HEIGHT_VARIATION;
             } else if (n < FOREST_THRESHOLD) {
                 type = "forest";
-                color = 0x006400;
+                color = TERRAIN_COLORS.FOREST;
                 moveCost = 1;
                 height = FOREST_BASE_HEIGHT + Math.random() * FOREST_HEIGHT_VARIATION;
             } else {
                 type = "mountain";
-                color = 0x808080;
+                color = TERRAIN_COLORS.MOUNTAIN;
                 moveCost = 2;
                 height = MOUNTAIN_BASE_HEIGHT + Math.random() * MOUNTAIN_HEIGHT_VARIATION;
             }
@@ -95,7 +95,12 @@ function createHexPrism(color, x, z, height) {
     const edges = new THREE.EdgesGeometry(geometry);
     const border = new THREE.LineSegments(
         edges,
-        new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 })
+        new THREE.LineBasicMaterial({
+            color: 0x000000,
+            linewidth: 1,
+            transparent: true,
+            opacity: 0.5
+        })
     );
     border.position.set(x, height / 2, z);
     hexGroup.add(border);
@@ -105,8 +110,8 @@ function createHexPrism(color, x, z, height) {
         x: x,
         z: z,
         height: height,
-        moveCost: material.color.getHex() === 0x0000ff ? Infinity : // Water
-            material.color.getHex() === 0x808080 ? 2 : // Mountain
+        moveCost: material.color.getHex() === TERRAIN_COLORS.WATER ? Infinity : // Water
+            material.color.getHex() === TERRAIN_COLORS.MOUNTAIN ? 2 : // Mountain
                 1 // Grass and Forest
     };
 
@@ -119,4 +124,27 @@ function createMiniHex(color, x, z) {
     const miniHex = new THREE.Mesh(geometry, material);
     miniHex.position.set(x, 0, z);
     return miniHex;
+}
+
+function getTerrainColor(noiseValue) {
+    let color;
+    if (noiseValue < WATER_THRESHOLD) {
+        color = TERRAIN_COLORS.WATER;
+    } else if (noiseValue < GRASS_THRESHOLD) {
+        color = TERRAIN_COLORS.GRASS;
+    } else if (noiseValue < FOREST_THRESHOLD) {
+        color = TERRAIN_COLORS.FOREST;
+    } else {
+        color = TERRAIN_COLORS.MOUNTAIN;
+    }
+    return color;
+}
+
+function isValidMove(unit, targetQ) {
+    if (!targetQ || !targetQ.userData) return false;
+    const material = targetQ.children[0].material;
+    const moveCost = material.color.getHex() === TERRAIN_COLORS.WATER ? Infinity : // Water
+        material.color.getHex() === TERRAIN_COLORS.MOUNTAIN ? 2 : // Mountain
+            1; // Grass and Forest
+    return unit.userData.move >= moveCost;
 }

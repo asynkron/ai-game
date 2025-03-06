@@ -397,7 +397,7 @@ function highlightHex(hex) {
     const shape = createHexShape();
     const geometry = new THREE.ShapeGeometry(shape);
     const material = new THREE.MeshBasicMaterial({
-        color: 0xffff00,
+        color: HIGHLIGHT_COLORS.MOVE_RANGE,
         transparent: true,
         opacity: 0.5,
         side: THREE.DoubleSide

@@ -28,4 +28,31 @@ const PERLIN_SCALE = 10;
 const WATER_THRESHOLD = 0.4;
 const GRASS_THRESHOLD = 0.6;
 const FOREST_THRESHOLD = 0.7;
+
+// Terrain colors
+const TERRAIN_COLORS = {
+    WATER: 0x293D86,
+    GRASS: 0x495627,
+    FOREST: 0x2A390C,
+    MOUNTAIN: 0x6F6D64
+};
+
+// Highlight colors
+const HIGHLIGHT_COLORS = {
+    VISIBLE_AREA: 0xffff00,  // Yellow for visible area in minimap
+    SELECTED: 0x00ff00,      // Green for selected unit
+    MOVE_RANGE: 0xffff00     // Yellow for move range
+};
+
+// Function to get terrain type from color
+function getTerrainTypeFromColor(color) {
+    switch (color) {
+        case TERRAIN_COLORS.WATER: return 'water';
+        case TERRAIN_COLORS.GRASS: return 'grass';
+        case TERRAIN_COLORS.FOREST: return 'forest';
+        case TERRAIN_COLORS.MOUNTAIN: return 'mountain';
+        default: return 'unknown';
+    }
+}
+
 console.log('constants.js loaded');

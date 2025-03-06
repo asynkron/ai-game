@@ -163,9 +163,9 @@ function updateMiniMapHighlights(highlightGroup, matrices) {
 
     const highlightGeometry = new THREE.CircleGeometry(HEX_RADIUS * 1.5, 6);
     const highlightMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffff00,
+        color: HIGHLIGHT_COLORS.VISIBLE_AREA,
         transparent: true,
-        opacity: 0.5,
+        opacity: 0.1,
         side: THREE.DoubleSide
     });
 
