@@ -63,6 +63,11 @@ function getHexPosition(q, r) {
     return { x, z };
 }
 
+function getWorldPosition(q, r, height = 0) {
+    const pos = getHexPosition(q, r);
+    return new THREE.Vector3(pos.x, height, pos.z);
+}
+
 function getDistance(q1, r1, q2, r2) {
     return Math.max(Math.abs(q1 - q2), Math.abs(r1 - r2), Math.abs((q1 + r1) - (q2 + r2)));
 }
@@ -85,10 +90,14 @@ function moveUnit(unit, path) {
     let delay = 0;
     path.forEach((hex) => {
         setTimeout(() => {
-            unit.position.set(hex.userData.x, 0, hex.userData.z);
+            const pos = getWorldPosition(hex.userData.q, hex.userData.r);
+            unit.position.copy(pos);
             unit.userData.q = hex.userData.q;
             unit.userData.r = hex.userData.r;
-            unit.userData.miniUnit.position.set(hex.userData.x, 0.5, hex.userData.z);
+
+            // Update minimap unit position
+            const miniPos = getWorldPosition(hex.userData.q, hex.userData.r, 0.5);
+            unit.userData.miniUnit.position.copy(miniPos);
         }, delay);
         delay += 200;
     });
@@ -127,8 +136,8 @@ function highlightMoveRange(q, r, move) {
                 const hex = hexGrid.find(h => h.userData.q === q + dq && h.userData.r === r + dr);
                 if (hex && hex.userData.moveCost !== Infinity) {
                     const highlight = new THREE.Mesh(geometry, material);
-                    // Position at the top of the hex tile
-                    highlight.position.set(hex.userData.x, hex.userData.height + 0.01, hex.userData.z);
+                    const pos = getWorldPosition(hex.userData.q, hex.userData.r, hex.userData.height + 0.01);
+                    highlight.position.copy(pos);
                     highlight.rotation.x = -Math.PI / 2;
                     highlights.add(highlight);
                 }
@@ -136,6 +145,60 @@ function highlightMoveRange(q, r, move) {
         }
     }
     group.add(highlights);
+}
+
+function drawPath(unit, path) {
+    if (pathLine) {
+        group.remove(pathLine);
+    }
+    const points = [];
+    const pathHeight = 0.3;
+
+    // Add unit's current position
+    points.push(getWorldPosition(unit.userData.q, unit.userData.r, pathHeight));
+
+    // Add each hex in the path
+    path.forEach(hex => {
+        points.push(getWorldPosition(hex.userData.q, hex.userData.r, pathHeight));
+    });
+
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 10 });
+    pathLine = new THREE.Line(geometry, material);
+    pathLine.computeLineDistances();
+    group.add(pathLine);
+}
+
+function getHexIntersects(raycaster) {
+    const intersectObjects = [];
+    hexGrid.forEach(hexGroup => {
+        hexGroup.children.forEach(child => {
+            if (child instanceof THREE.Mesh) {
+                intersectObjects.push(child);
+            }
+        });
+    });
+    return raycaster.intersectObjects(intersectObjects);
+}
+
+function getMinimapWorldPosition(event, minimapOverlay) {
+    const rect = minimapOverlay.getBoundingClientRect();
+    const clickX = (event.clientX - rect.left) / MINIMAP_WIDTH;
+    const clickY = (event.clientY - rect.top) / MINIMAP_HEIGHT;
+    if (clickX >= 0 && clickX <= 1 && clickY >= 0 && clickY <= 1) {
+        const mapWidth = MAP_COLS * HEX_RADIUS * 1.5;
+        const mapHeight = MAP_ROWS * HEX_RADIUS * Math.sqrt(3);
+        return {
+            x: clickX * mapWidth,
+            z: clickY * mapHeight
+        };
+    }
+    return null;
+}
+
+function updateCameraLookAt(camera, worldPos, matrices) {
+    const worldLookDirection = getLookDirection(cameraHeight).clone().applyMatrix4(matrices.localToWorldMatrix);
+    camera.lookAt(worldPos.clone().add(worldLookDirection.multiplyScalar(10)));
 }
 
 console.log('utils.js loaded');

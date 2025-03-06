@@ -62,36 +62,20 @@ function setupEventListeners(matrices) {
         raycaster.setFromCamera(mouse, camera);
 
         if (isDraggingMinimap) {
-            const rect = minimapOverlay.getBoundingClientRect();
-            const clickX = (event.clientX - rect.left) / MINIMAP_WIDTH;
-            const clickY = (event.clientY - rect.top) / MINIMAP_HEIGHT;
-            if (clickX >= 0 && clickX <= 1 && clickY >= 0 && clickY <= 1) {
-                const mapWidth = MAP_COLS * HEX_RADIUS * 1.5;
-                const mapHeight = MAP_ROWS * HEX_RADIUS * Math.sqrt(3);
-                const worldX = clickX * mapWidth;
-                const worldZ = clickY * mapHeight;
-                setCameraPosition(worldX, worldZ, matrices);
+            const worldPos = getMinimapWorldPosition(event, minimapOverlay);
+            if (worldPos) {
+                setCameraPosition(worldPos.x, worldPos.z, matrices);
             }
             event.preventDefault();
             event.stopPropagation();
         }
 
-        // Get all meshes from the hexGrid groups
-        const intersectObjects = [];
-        hexGrid.forEach(hexGroup => {
-            hexGroup.children.forEach(child => {
-                if (child instanceof THREE.Mesh) {
-                    intersectObjects.push(child);
-                }
-            });
-        });
-
-        const intersects = raycaster.intersectObjects(intersectObjects);
+        const intersects = getHexIntersects(raycaster);
         if (intersects.length > 0) {
             const intersectedMesh = intersects[0].object;
             const hexGroup = intersectedMesh.parent;
-            const pos = getHex3DPosition(hexGroup.userData.q, hexGroup.userData.r, hexGroup.userData.height + 0.01);
-            highlightOutline.position.copy(pos);
+            const worldPos = getWorldPosition(hexGroup.userData.q, hexGroup.userData.r, hexGroup.userData.height + 0.01);
+            highlightOutline.position.copy(worldPos);
             highlightOutline.visible = true;
         } else {
             highlightOutline.visible = false;
@@ -123,15 +107,9 @@ function setupEventListeners(matrices) {
 
     window.addEventListener('mouseup', (event) => {
         if (isDraggingMinimap) {
-            const rect = minimapOverlay.getBoundingClientRect();
-            const clickX = (event.clientX - rect.left) / MINIMAP_WIDTH;
-            const clickY = (event.clientY - rect.top) / MINIMAP_HEIGHT;
-            if (clickX >= 0 && clickX <= 1 && clickY >= 0 && clickY <= 1) {
-                const mapWidth = MAP_COLS * HEX_RADIUS * 1.5;
-                const mapHeight = MAP_ROWS * HEX_RADIUS * Math.sqrt(3);
-                const worldX = clickX * mapWidth;
-                const worldZ = clickY * mapHeight;
-                setCameraPosition(worldX, worldZ, matrices);
+            const worldPos = getMinimapWorldPosition(event, minimapOverlay);
+            if (worldPos) {
+                setCameraPosition(worldPos.x, worldPos.z, matrices);
             }
             isDraggingMinimap = false;
             event.preventDefault();
@@ -153,17 +131,7 @@ function setupEventListeners(matrices) {
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
 
-        // Get all meshes from the hexGrid groups
-        const intersectObjects = [];
-        hexGrid.forEach(hexGroup => {
-            hexGroup.children.forEach(child => {
-                if (child instanceof THREE.Mesh) {
-                    intersectObjects.push(child);
-                }
-            });
-        });
-
-        const intersects = raycaster.intersectObjects(intersectObjects);
+        const intersects = getHexIntersects(raycaster);
         if (intersects.length > 0) {
             const hexGroup = intersects[0].object.parent;
 
@@ -211,14 +179,10 @@ function setupEventListeners(matrices) {
     });
 
     minimapOverlay.addEventListener('click', (event) => {
-        const rect = minimapOverlay.getBoundingClientRect();
-        const clickX = (event.clientX - rect.left) / MINIMAP_WIDTH;
-        const clickY = (event.clientY - rect.top) / MINIMAP_HEIGHT;
-        const mapWidth = MAP_COLS * HEX_RADIUS * 1.5;
-        const mapHeight = MAP_ROWS * HEX_RADIUS * Math.sqrt(3);
-        const worldX = clickX * mapWidth;
-        const worldZ = clickY * mapHeight;
-        setCameraPosition(worldX, worldZ, matrices);
+        const worldPos = getMinimapWorldPosition(event, minimapOverlay);
+        if (worldPos) {
+            setCameraPosition(worldPos.x, worldPos.z, matrices);
+        }
         event.preventDefault();
         event.stopPropagation();
     });

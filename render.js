@@ -43,21 +43,28 @@ function getLookDirection(height) {
     return new THREE.Vector3(0, downwardTilt, -1).normalize();
 }
 
+function setCameraPosition(worldX, worldZ, matrices) {
+    const localPos = new THREE.Vector3(worldX, cameraHeight, worldZ);
+    const worldPos = localPos.clone().applyMatrix4(matrices.localToWorldMatrix);
+    camera.position.copy(worldPos);
+    updateCameraLookAt(camera, worldPos, matrices);
+}
+
 function updateCameraPosition(deltaX, deltaY, matrices) {
     const localCameraPos = camera.position.clone().applyMatrix4(matrices.worldToLocalMatrix);
     localCameraPos.x += deltaX;
     localCameraPos.z += deltaY;
-    camera.position.copy(localCameraPos.clone().applyMatrix4(matrices.localToWorldMatrix));
-    const worldLookDirection = getLookDirection(cameraHeight).clone().applyMatrix4(matrices.localToWorldMatrix);
-    camera.lookAt(camera.position.clone().add(worldLookDirection.multiplyScalar(10)));
+    const worldCameraPos = localCameraPos.clone().applyMatrix4(matrices.localToWorldMatrix);
+    camera.position.copy(worldCameraPos);
+    updateCameraLookAt(camera, worldCameraPos, matrices);
 }
 
 function updateCameraZoom(matrices) {
     const localCameraPos = camera.position.clone().applyMatrix4(matrices.worldToLocalMatrix);
     localCameraPos.y = cameraHeight;
-    camera.position.copy(localCameraPos.clone().applyMatrix4(matrices.localToWorldMatrix));
-    const worldLookDirection = getLookDirection(cameraHeight).clone().applyMatrix4(matrices.localToWorldMatrix);
-    camera.lookAt(camera.position.clone().add(worldLookDirection.multiplyScalar(10)));
+    const worldCameraPos = localCameraPos.clone().applyMatrix4(matrices.localToWorldMatrix);
+    camera.position.copy(worldCameraPos);
+    updateCameraLookAt(camera, worldCameraPos, matrices);
 }
 
 // Minimap Setup
