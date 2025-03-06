@@ -90,7 +90,8 @@ function setupEventListeners(matrices) {
         if (intersects.length > 0) {
             const intersectedMesh = intersects[0].object;
             const hexGroup = intersectedMesh.parent;
-            highlightOutline.position.set(hexGroup.userData.x, hexGroup.userData.height + 0.01, hexGroup.userData.z);
+            const pos = getHex3DPosition(hexGroup.userData.q, hexGroup.userData.r, hexGroup.userData.height + 0.01);
+            highlightOutline.position.copy(pos);
             highlightOutline.visible = true;
         } else {
             highlightOutline.visible = false;
@@ -152,42 +153,54 @@ function setupEventListeners(matrices) {
         mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
 
-        const intersectsUnits = raycaster.intersectObjects(allUnits);
-        if (intersectsUnits.length > 0 && currentTurn === 0) {
-            const unit = intersectsUnits[0].object.parent;
-            if (players[0].units.includes(unit)) {
-                selectedUnit = unit;
+        // Get all meshes from the hexGrid groups
+        const intersectObjects = [];
+        hexGrid.forEach(hexGroup => {
+            hexGroup.children.forEach(child => {
+                if (child instanceof THREE.Mesh) {
+                    intersectObjects.push(child);
+                }
+            });
+        });
+
+        const intersects = raycaster.intersectObjects(intersectObjects);
+        if (intersects.length > 0) {
+            const hexGroup = intersects[0].object.parent;
+
+            // Check if there's a unit on this hex
+            const unitOnHex = allUnits.find(u => u.userData.q === hexGroup.userData.q && u.userData.r === hexGroup.userData.r);
+
+            if (unitOnHex && currentTurn === 0 && players[0].units.includes(unitOnHex)) {
+                // Select the unit
+                selectedUnit = unitOnHex;
                 if (pathLine) {
                     group.remove(pathLine);
                     pathLine = null;
                 }
-                highlightMoveRange(unit.userData.q, unit.userData.r, unit.userData.move);
+                highlightMoveRange(unitOnHex.userData.q, unitOnHex.userData.r, unitOnHex.userData.move);
                 return;
-            }
-        }
-
-        const intersectsHexes = raycaster.intersectObjects(hexGrid);
-        if (intersectsHexes.length > 0 && selectedUnit) {
-            const hex = intersectsHexes[0].object;
-            const dist = getDistance(selectedUnit.userData.q, selectedUnit.userData.r, hex.userData.q, hex.userData.r);
-            if (dist > 0 && dist <= selectedUnit.userData.move && hex.userData.moveCost !== Infinity && !allUnits.some(u => u.userData.q === hex.userData.q && u.userData.r === hex.userData.r && u !== selectedUnit)) {
-                const path = getPath(selectedUnit.userData.q, selectedUnit.userData.r, hex.userData.q, hex.userData.r, selectedUnit.userData.move);
-                if (path.length > 0) {
-                    selectedUnit.userData.move -= dist;
-                    moveUnit(selectedUnit, path);
-                    if (pathLine) {
-                        group.remove(pathLine);
-                        pathLine = null;
+            } else if (selectedUnit) {
+                // Try to move the selected unit
+                const dist = getDistance(selectedUnit.userData.q, selectedUnit.userData.r, hexGroup.userData.q, hexGroup.userData.r);
+                if (dist > 0 && dist <= selectedUnit.userData.move && hexGroup.userData.moveCost !== Infinity && !allUnits.some(u => u.userData.q === hexGroup.userData.q && u.userData.r === hexGroup.userData.r && u !== selectedUnit)) {
+                    const path = getPath(selectedUnit.userData.q, selectedUnit.userData.r, hexGroup.userData.q, hexGroup.userData.r, selectedUnit.userData.move);
+                    if (path.length > 0) {
+                        selectedUnit.userData.move -= dist;
+                        moveUnit(selectedUnit, path);
+                        if (pathLine) {
+                            group.remove(pathLine);
+                            pathLine = null;
+                        }
+                        selectedUnit = null;
+                        scene.remove(scene.getObjectByName("highlights"));
                     }
-                    selectedUnit = null;
-                    scene.remove(scene.getObjectByName("highlights"));
                 }
             }
             return;
         }
 
         // Clear selection if clicking elsewhere
-        if (selectedUnit && intersectsHexes.length === 0) {
+        if (selectedUnit) {
             selectedUnit = null;
             if (pathLine) {
                 group.remove(pathLine);
