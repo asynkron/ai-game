@@ -183,33 +183,6 @@ function cpuTurn() {
     setTimeout(nextTurn, 1000);
 }
 
-function drawPath(unit, path) {
-    if (pathLine) {
-        group.remove(pathLine);
-    }
-    const points = [];
-    const pathHeight = 0.3;
-    points.push(new THREE.Vector3(unit.position.x, pathHeight, unit.position.z));
-    path.forEach(hex => {
-        points.push(new THREE.Vector3(hex.userData.x, pathHeight, hex.userData.z));
-    });
-    console.log("Path points:", points);
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const material = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 10 });
-    pathLine = new THREE.Line(geometry, material);
-    pathLine.computeLineDistances();
-    group.add(pathLine);
-    console.log("Path line added:", pathLine.visible);
-}
-
-function setCameraPosition(worldX, worldZ, matrices) {
-    const localPos = new THREE.Vector3(worldX, cameraHeight, worldZ);
-    const worldPos = localPos.clone().applyMatrix4(matrices.localToWorldMatrix);
-    camera.position.copy(worldPos);
-    const worldLookDirection = getLookDirection(cameraHeight).clone().applyMatrix4(matrices.localToWorldMatrix);
-    camera.lookAt(worldPos.clone().add(worldLookDirection.multiplyScalar(10)));
-}
-
 function initGame() {
     console.log('initGame called');
     initRenderer();

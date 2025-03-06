@@ -11,13 +11,6 @@ function initRenderer() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
     scene.add(group);
-
-    // Add a simple cube to the scene for testing
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const cube = new THREE.Mesh(geometry, material);
-    cube.position.set(0, 0.5, 0); // Position the cube at the center
-    group.add(cube);
 }
 
 // Camera Setup
