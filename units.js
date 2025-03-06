@@ -18,6 +18,19 @@ function initUnits() {
 function createUnit(type, q, r, playerIndex) {
     const unitGroup = new THREE.Group();
 
+    // Create shadow circle
+    const shadowGeometry = new THREE.CircleGeometry(0.8, 32);
+    const shadowMaterial = new THREE.MeshBasicMaterial({
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.3,
+        side: THREE.DoubleSide
+    });
+    const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
+    shadow.rotation.x = -Math.PI / 2; // Make it flat on the ground
+    shadow.position.y = 0.01; // Slightly above the tile to prevent z-fighting
+    unitGroup.add(shadow);
+
     const canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 192;
