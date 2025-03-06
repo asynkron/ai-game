@@ -390,10 +390,11 @@ function clearHighlights() {
 function isValidMove(unit, targetHex) {
     if (!targetHex || targetHex.userData.moveCost === Infinity) return false;
 
-    const dist = getDistance(unit.userData.q, unit.userData.r, targetHex.userData.q, targetHex.userData.r);
-    if (dist <= 0 || dist > unit.userData.move) return false;
+    // Use Dijkstra to check if the target is reachable
+    const { reachable } = dijkstra(unit.userData.q, unit.userData.r, unit.userData.move);
+    const targetKey = `${targetHex.userData.q},${targetHex.userData.r}`;
 
-    return !allUnits.some(u => u.userData.q === targetHex.userData.q && u.userData.r === targetHex.userData.r && u !== unit);
+    return reachable.has(targetKey);
 }
 
 function handleUnitSelection(unit) {
@@ -403,6 +404,11 @@ function handleUnitSelection(unit) {
 }
 
 function handleUnitMovement(unit, targetHex) {
+    console.log('handleUnitMovement called with:', {
+        unit: `${unit.userData.q},${unit.userData.r}`,
+        target: `${targetHex.userData.q},${targetHex.userData.r}`,
+        move: unit.userData.move
+    });
     const path = getPath(unit.userData.q, unit.userData.r, targetHex.userData.q, targetHex.userData.r, unit.userData.move);
     if (path.length > 0) {
         unit.userData.move -= getDistance(unit.userData.q, unit.userData.r, targetHex.userData.q, targetHex.userData.r);
