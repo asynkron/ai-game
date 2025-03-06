@@ -87,15 +87,10 @@ function setupEventListeners(matrices) {
             updateCameraPosition(deltaX, deltaY, matrices);
             previousMousePosition = { x: event.clientX, y: event.clientY };
         } else if (selectedUnit) {
-            // Draw path on mouse move
-            if (pathLine) {
-                group.remove(pathLine);
-                pathLine = null;
-            }
+            clearPathLine();
             if (intersects.length > 0) {
                 const hexGroup = intersects[0].object.parent;
-                const dist = getDistance(selectedUnit.userData.q, selectedUnit.userData.r, hexGroup.userData.q, hexGroup.userData.r);
-                if (dist > 0 && dist <= selectedUnit.userData.move && hexGroup.userData.moveCost !== Infinity && !allUnits.some(u => u.userData.q === hexGroup.userData.q && u.userData.r === hexGroup.userData.r && u !== selectedUnit)) {
+                if (isValidMove(selectedUnit, hexGroup)) {
                     const path = getPath(selectedUnit.userData.q, selectedUnit.userData.r, hexGroup.userData.q, hexGroup.userData.r, selectedUnit.userData.move);
                     if (path.length > 0) {
                         drawPath(selectedUnit, path);
@@ -134,35 +129,13 @@ function setupEventListeners(matrices) {
         const intersects = getHexIntersects(raycaster);
         if (intersects.length > 0) {
             const hexGroup = intersects[0].object.parent;
-
-            // Check if there's a unit on this hex
             const unitOnHex = allUnits.find(u => u.userData.q === hexGroup.userData.q && u.userData.r === hexGroup.userData.r);
 
             if (unitOnHex && currentTurn === 0 && players[0].units.includes(unitOnHex)) {
-                // Select the unit
-                selectedUnit = unitOnHex;
-                if (pathLine) {
-                    group.remove(pathLine);
-                    pathLine = null;
-                }
-                highlightMoveRange(unitOnHex.userData.q, unitOnHex.userData.r, unitOnHex.userData.move);
+                handleUnitSelection(unitOnHex);
                 return;
-            } else if (selectedUnit) {
-                // Try to move the selected unit
-                const dist = getDistance(selectedUnit.userData.q, selectedUnit.userData.r, hexGroup.userData.q, hexGroup.userData.r);
-                if (dist > 0 && dist <= selectedUnit.userData.move && hexGroup.userData.moveCost !== Infinity && !allUnits.some(u => u.userData.q === hexGroup.userData.q && u.userData.r === hexGroup.userData.r && u !== selectedUnit)) {
-                    const path = getPath(selectedUnit.userData.q, selectedUnit.userData.r, hexGroup.userData.q, hexGroup.userData.r, selectedUnit.userData.move);
-                    if (path.length > 0) {
-                        selectedUnit.userData.move -= dist;
-                        moveUnit(selectedUnit, path);
-                        if (pathLine) {
-                            group.remove(pathLine);
-                            pathLine = null;
-                        }
-                        selectedUnit = null;
-                        scene.remove(scene.getObjectByName("highlights"));
-                    }
-                }
+            } else if (selectedUnit && isValidMove(selectedUnit, hexGroup)) {
+                handleUnitMovement(selectedUnit, hexGroup);
             }
             return;
         }
@@ -170,11 +143,8 @@ function setupEventListeners(matrices) {
         // Clear selection if clicking elsewhere
         if (selectedUnit) {
             selectedUnit = null;
-            if (pathLine) {
-                group.remove(pathLine);
-                pathLine = null;
-            }
-            scene.remove(scene.getObjectByName("highlights"));
+            clearPathLine();
+            clearHighlights();
         }
     });
 
@@ -205,11 +175,8 @@ function nextTurn() {
     players[currentTurn].units.forEach(u => u.userData.move = unitTypes[u.userData.type].move);
     if (currentTurn !== 0) cpuTurn();
     selectedUnit = null;
-    if (pathLine) {
-        group.remove(pathLine);
-        pathLine = null;
-    }
-    scene.remove(scene.getObjectByName("highlights"));
+    clearPathLine();
+    clearHighlights();
 }
 
 function cpuTurn() {

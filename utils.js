@@ -108,20 +108,7 @@ function highlightMoveRange(q, r, move) {
     highlights.name = "highlights";
     while (highlights.children.length > 0) highlights.remove(highlights.children[0]);
 
-    // Create a hexagon shape that matches the hex tiles
-    const shape = new THREE.Shape();
-    const radius = HEX_RADIUS;
-    for (let i = 0; i < 6; i++) {
-        const angle = (i * Math.PI) / 3;
-        const x = radius * Math.cos(angle);
-        const y = radius * Math.sin(angle);
-        if (i === 0) {
-            shape.moveTo(x, y);
-        } else {
-            shape.lineTo(x, y);
-        }
-    }
-
+    const shape = createHexShape();
     const geometry = new THREE.ShapeGeometry(shape);
     const material = new THREE.MeshBasicMaterial({
         color: 0xffff00,
@@ -199,6 +186,69 @@ function getMinimapWorldPosition(event, minimapOverlay) {
 function updateCameraLookAt(camera, worldPos, matrices) {
     const worldLookDirection = getLookDirection(cameraHeight).clone().applyMatrix4(matrices.localToWorldMatrix);
     camera.lookAt(worldPos.clone().add(worldLookDirection.multiplyScalar(10)));
+}
+
+function createHexShape(radius = HEX_RADIUS) {
+    const shape = new THREE.Shape();
+    for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI) / 3;
+        const x = radius * Math.cos(angle);
+        const y = radius * Math.sin(angle);
+        if (i === 0) {
+            shape.moveTo(x, y);
+        } else {
+            shape.lineTo(x, y);
+        }
+    }
+    return shape;
+}
+
+function createHexGeometry(radius = HEX_RADIUS, height = 1) {
+    const geometry = new THREE.CylinderGeometry(radius, radius, height, 6);
+    geometry.rotateY(Math.PI / 2);
+    return geometry;
+}
+
+function clearPathLine() {
+    if (pathLine) {
+        group.remove(pathLine);
+        pathLine = null;
+    }
+}
+
+function clearHighlights() {
+    const highlights = group.getObjectByName("highlights");
+    if (highlights) {
+        group.remove(highlights);
+    }
+}
+
+function isValidMove(unit, targetHex) {
+    if (!targetHex || targetHex.userData.moveCost === Infinity) return false;
+
+    const dist = getDistance(unit.userData.q, unit.userData.r, targetHex.userData.q, targetHex.userData.r);
+    if (dist <= 0 || dist > unit.userData.move) return false;
+
+    return !allUnits.some(u => u.userData.q === targetHex.userData.q && u.userData.r === targetHex.userData.r && u !== unit);
+}
+
+function handleUnitSelection(unit) {
+    selectedUnit = unit;
+    clearPathLine();
+    highlightMoveRange(unit.userData.q, unit.userData.r, unit.userData.move);
+}
+
+function handleUnitMovement(unit, targetHex) {
+    const path = getPath(unit.userData.q, unit.userData.r, targetHex.userData.q, targetHex.userData.r, unit.userData.move);
+    if (path.length > 0) {
+        unit.userData.move -= getDistance(unit.userData.q, unit.userData.r, targetHex.userData.q, targetHex.userData.r);
+        moveUnit(unit, path);
+        clearPathLine();
+        selectedUnit = null;
+        clearHighlights();
+        return true;
+    }
+    return false;
 }
 
 console.log('utils.js loaded');

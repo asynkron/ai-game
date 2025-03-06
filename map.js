@@ -71,10 +71,7 @@ function createMap() {
 }
 
 function createHexPrism(color, x, z, height) {
-    const radius = HEX_RADIUS;
-    const geometry = new THREE.CylinderGeometry(radius, radius, height, 6);
-    geometry.rotateY(Math.PI / 2);
-
+    const geometry = createHexGeometry(HEX_RADIUS, height);
     const material = new THREE.MeshBasicMaterial({
         color,
         side: THREE.DoubleSide,
@@ -108,7 +105,6 @@ function createHexPrism(color, x, z, height) {
 
     return hexGroup;
 }
-
 
 function createMiniHex(color, x, z) {
     const geometry = new THREE.BoxGeometry(1, 0.01, 1);
