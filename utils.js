@@ -95,26 +95,47 @@ function moveUnit(unit, path) {
 }
 
 function highlightMoveRange(q, r, move) {
-    const highlights = scene.getObjectByName("highlights") || new THREE.Group();
+    const highlights = group.getObjectByName("highlights") || new THREE.Group();
     highlights.name = "highlights";
     while (highlights.children.length > 0) highlights.remove(highlights.children[0]);
 
-    const geometry = new THREE.CircleGeometry(HEX_RADIUS, 6);
-    const material = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.5 });
+    // Create a hexagon shape that matches the hex tiles
+    const shape = new THREE.Shape();
+    const radius = HEX_RADIUS;
+    for (let i = 0; i < 6; i++) {
+        const angle = (i * Math.PI) / 3;
+        const x = radius * Math.cos(angle);
+        const y = radius * Math.sin(angle);
+        if (i === 0) {
+            shape.moveTo(x, y);
+        } else {
+            shape.lineTo(x, y);
+        }
+    }
+
+    const geometry = new THREE.ShapeGeometry(shape);
+    const material = new THREE.MeshBasicMaterial({
+        color: 0xffff00,
+        transparent: true,
+        opacity: 0.5,
+        side: THREE.DoubleSide
+    });
+
     for (let dq = -move; dq <= move; dq++) {
         for (let dr = -move; dr <= move; dr++) {
             if (Math.abs(dq) + Math.abs(dr) + Math.abs(-dq - dr) <= move * 2) {
                 const hex = hexGrid.find(h => h.userData.q === q + dq && h.userData.r === r + dr);
                 if (hex && hex.userData.moveCost !== Infinity) {
                     const highlight = new THREE.Mesh(geometry, material);
+                    // Position at the top of the hex tile
                     highlight.position.set(hex.userData.x, hex.userData.height + 0.01, hex.userData.z);
-                    highlight.rotation.x = Math.PI / 2;
+                    highlight.rotation.x = -Math.PI / 2;
                     highlights.add(highlight);
                 }
             }
         }
     }
-    scene.add(highlights);
+    group.add(highlights);
 }
 
 console.log('utils.js loaded');
