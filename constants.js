@@ -9,6 +9,17 @@ const MAX_CAMERA_HEIGHT = 30;
 const ZOOM_SPEED = 1;
 const MINIMAP_WIDTH = 300;
 const MINIMAP_HEIGHT = 300;
+
+// Terrain height constants
+const WATER_BASE_HEIGHT = -0.1;
+const WATER_HEIGHT_VARIATION = 0.15;
+const GRASS_BASE_HEIGHT = 0.1;
+const GRASS_HEIGHT_VARIATION = 0.3;
+const FOREST_BASE_HEIGHT = 0.3;
+const FOREST_HEIGHT_VARIATION = 0.4;
+const MOUNTAIN_BASE_HEIGHT = 0.5;
+const MOUNTAIN_HEIGHT_VARIATION = 0.3;
+
 const players = [
     { id: "human", color: 0x0000ff, units: [] },
     { id: "cpu1", color: 0xff0000, units: [] }

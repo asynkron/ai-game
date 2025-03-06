@@ -3,7 +3,7 @@
 // const MAP_COLS = 10;
 // const HEX_RADIUS = 5;
 // const MAP_TILT_ANGLE = Math.PI / 6;
-const hexGrid = [];
+
 //let group;
 //group = new THREE.Group();
 
@@ -32,27 +32,27 @@ function createMap() {
                 type = "water";
                 color = 0x0000ff;
                 moveCost = Infinity;
-                height = -0.1;
+                height = WATER_BASE_HEIGHT + Math.random() * WATER_HEIGHT_VARIATION;
             } else if (n < GRASS_THRESHOLD) {
                 type = "grass";
                 color = 0x00ff00;
                 moveCost = 1;
-                height = 0.1;
+                height = GRASS_BASE_HEIGHT + Math.random() * GRASS_HEIGHT_VARIATION;
             } else if (n < FOREST_THRESHOLD) {
                 type = "forest";
                 color = 0x006400;
                 moveCost = 1;
-                height = 0.3;
+                height = FOREST_BASE_HEIGHT + Math.random() * FOREST_HEIGHT_VARIATION;
             } else {
                 type = "mountain";
                 color = 0x808080;
                 moveCost = 2;
-                height = 0.5;
+                height = MOUNTAIN_BASE_HEIGHT + Math.random() * MOUNTAIN_HEIGHT_VARIATION;
             }
 
             const hex = createHexPrism(color, x, z, height);
             group.add(hex);
-            hexGrid.push(hex);
+            addHex(hex);
 
             const miniHex = createMiniHex(color, x, z);
             miniMapScene.add(miniHex);
