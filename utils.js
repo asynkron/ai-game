@@ -101,7 +101,6 @@ function getDistance(q1, r1, q2, r2) {
 
 // Dijkstra's algorithm implementation
 function dijkstra(startQ, startR, maxCost = Infinity) {
-    console.log('Dijkstra starting:', { startQ, startR, maxCost });
     const distances = new Map();
     const previous = new Map();
     const unvisited = new Set();
@@ -174,11 +173,8 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
             const neighborHex = hexGrid.find(h => h.userData.q === neighbor.q && h.userData.r === neighbor.r);
             if (!neighborHex) return;
 
-            // Check if hex is occupied using the same function as highlightMoveRange
-            if (isHexOccupied(neighbor.q, neighbor.r)) {
-                console.log('Neighbor', neighborKey, 'is occupied by a unit');
-                return;
-            }
+            // Check if hex is occupied
+            if (isHexOccupied(neighbor.q, neighbor.r)) return;
 
             // Calculate cost to reach this neighbor based on terrain
             let cost = 1; // Default cost for grass and forest
@@ -186,18 +182,9 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
                 cost = Infinity; // Impassable terrain
             }
 
-            if (cost === Infinity) {
-                console.log('Neighbor', neighborKey, 'is impassable terrain');
-                return;
-            }
+            if (cost === Infinity) return;
 
             const newDistance = distances.get(currentKey) + cost;
-            console.log('Checking neighbor', neighborKey, ':', {
-                currentDistance: distances.get(neighborKey),
-                newDistance,
-                cost,
-                terrain: neighborHex.userData.type
-            });
 
             // Update distance if we found a shorter path
             if (newDistance < distances.get(neighborKey)) {
@@ -206,57 +193,40 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
                 // Only add to reachable if within move range
                 if (newDistance <= maxCost) {
                     reachable.add(neighborKey);
-                    console.log('Added to reachable:', neighborKey, 'with distance', newDistance);
                 }
             }
         });
     }
 
-    console.log('Dijkstra finished. Found', reachable.size, 'reachable tiles');
-    console.log('Previous tiles:', Object.fromEntries(previous));
     return { distances, previous, reachable };
 }
 
 function getPath(q1, r1, q2, r2, move) {
-    console.log('Getting path from', q1, r1, 'to', q2, r2, 'with move', move);
     const { previous, reachable } = dijkstra(q1, r1, move);
     const path = [];
     let currentKey = `${q2},${r2}`;
 
-    console.log('Reachable tiles:', Array.from(reachable));
-    console.log('Previous tiles:', Object.fromEntries(previous));
-
     // Check if target is reachable
     if (!reachable.has(currentKey)) {
-        console.log('Target is not reachable');
         return [];
     }
 
-    console.log('Starting path reconstruction from', currentKey);
     // Reconstruct path by backtracking from target to start
     while (previous.has(currentKey)) {
         const [q, r] = currentKey.split(',').map(Number);
         const hex = hexGrid.find(h => h.userData.q === q && h.userData.r === r);
         if (hex) {
             path.unshift(hex);
-            console.log('Added to path:', q, r);
-        } else {
-            console.log('Could not find hex for:', q, r);
         }
         currentKey = previous.get(currentKey);
-        console.log('Moving to previous tile:', currentKey);
     }
 
     // Add start hex
     const startHex = hexGrid.find(h => h.userData.q === q1 && h.userData.r === r1);
     if (startHex) {
         path.unshift(startHex);
-        console.log('Added start hex:', q1, r1);
-    } else {
-        console.log('Could not find start hex:', q1, r1);
     }
 
-    console.log('Final path:', path.map(h => `${h.userData.q},${h.userData.r}`));
     return path.slice(1); // Exclude starting hex
 }
 
@@ -404,11 +374,6 @@ function handleUnitSelection(unit) {
 }
 
 function handleUnitMovement(unit, targetHex) {
-    console.log('handleUnitMovement called with:', {
-        unit: `${unit.userData.q},${unit.userData.r}`,
-        target: `${targetHex.userData.q},${targetHex.userData.r}`,
-        move: unit.userData.move
-    });
     const path = getPath(unit.userData.q, unit.userData.r, targetHex.userData.q, targetHex.userData.r, unit.userData.move);
     if (path.length > 0) {
         unit.userData.move -= getDistance(unit.userData.q, unit.userData.r, targetHex.userData.q, targetHex.userData.r);
