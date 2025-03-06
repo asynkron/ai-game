@@ -17,8 +17,8 @@ const GRASS_BASE_HEIGHT = 0.1;
 const GRASS_HEIGHT_VARIATION = 0.1;
 const FOREST_BASE_HEIGHT = 0.3;
 const FOREST_HEIGHT_VARIATION = 0.4;
-const MOUNTAIN_BASE_HEIGHT = 0.5;
-const MOUNTAIN_HEIGHT_VARIATION = 0.3;
+const MOUNTAIN_BASE_HEIGHT = 0.6;
+const MOUNTAIN_HEIGHT_VARIATION = 0.5;
 
 const players = [
     { id: "human", color: 0x0000ff, units: [] },
