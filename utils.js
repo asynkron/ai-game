@@ -1,6 +1,33 @@
 // utils.js
 console.log('utils.js starting');
 
+/*
+ * Hex Grid Coordinate System and Neighbor Calculations
+ * 
+ * We use an offset coordinate system with flat-top hexes:
+ * - q: column (horizontal position)
+ * - r: row (vertical position)
+ * 
+ * The grid is offset, meaning odd columns are shifted up by half a hex height.
+ * This creates a natural honeycomb pattern but requires special handling for neighbors.
+ * 
+ * For a hex at position (q,r):
+ * 
+ * Odd columns (q % 2 === 1):
+ *   NW: (q-1, r)      N: (q, r-1)     NE: (q+1, r)
+ *   SW: (q-1, r+1)    S: (q, r+1)     SE: (q+1, r+1)
+ * 
+ * Even columns (q % 2 === 0):
+ *   NW: (q-1, r-1)    N: (q, r-1)     NE: (q+1, r-1)
+ *   SW: (q-1, r+1)    S: (q, r+1)     SE: (q+1, r+1)
+ * 
+ * Key points:
+ * 1. The N and S neighbors are always (q, r-1) and (q, r+1) regardless of column
+ * 2. Diagonal neighbors (NW, NE, SW, SE) need to be adjusted based on column parity
+ * 3. For odd columns, diagonal neighbors are shifted up by 1 in the r coordinate
+ * 4. The getHexPosition function handles this offset in the visual layout
+ */
+
 // Perlin noise implementation
 function fade(t) {
     return t * t * t * (t * (t * 6 - 15) + 10);
@@ -115,18 +142,41 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
         const currentHex = hexGrid.find(h => h.userData.q === currentQ && h.userData.r === currentR);
         if (!currentHex) continue;
 
-        // Get all neighboring hexes
-        const neighbors = getHexesInRange(currentQ, currentR, 1);
-        console.log('Processing neighbors for', currentKey, ':', neighbors.length, 'neighbors found');
+        // Calculate neighbors using even/odd column logic
+        const isOddColumn = currentQ % 2 === 1;
+        const neighbors = [
+            // NW
+            { q: currentQ - 1, r: currentR - (isOddColumn ? 0 : 1) },
+            // N
+            { q: currentQ, r: currentR - 1 },
+            // NE
+            { q: currentQ + 1, r: currentR - (isOddColumn ? 0 : 1) },
+            // SE
+            { q: currentQ + 1, r: currentR + 1 - (isOddColumn ? 0 : 1) },
+            // S
+            { q: currentQ, r: currentR + 1 },
+            // SW
+            { q: currentQ - 1, r: currentR + 1 - (isOddColumn ? 0 : 1) }
+        ];
 
+        // Process each neighbor
         neighbors.forEach(neighbor => {
-            const neighborKey = `${neighbor.userData.q},${neighbor.userData.r}`;
+            const neighborKey = `${neighbor.q},${neighbor.r}`;
             if (visited.has(neighborKey)) return;
+
+            // Check if the hex is within map bounds
+            if (neighbor.q < 0 || neighbor.q >= MAP_COLS ||
+                neighbor.r < 0 || neighbor.r >= MAP_ROWS) {
+                return;
+            }
+
+            const neighborHex = hexGrid.find(h => h.userData.q === neighbor.q && h.userData.r === neighbor.r);
+            if (!neighborHex) return;
 
             // Check if hex is occupied by another unit
             const isOccupied = allUnits.some(unit =>
-                unit.userData.q === neighbor.userData.q &&
-                unit.userData.r === neighbor.userData.r
+                unit.userData.q === neighbor.q &&
+                unit.userData.r === neighbor.r
             );
             if (isOccupied) {
                 console.log('Neighbor', neighborKey, 'is occupied by a unit');
@@ -134,7 +184,7 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
             }
 
             // Calculate cost to reach this neighbor
-            const cost = neighbor.userData.moveCost;
+            const cost = neighborHex.userData.moveCost;
             if (cost === Infinity) {
                 console.log('Neighbor', neighborKey, 'is impassable (cost = Infinity)');
                 return;
@@ -179,46 +229,23 @@ function getPath(q1, r1, q2, r2, move) {
     return path.slice(1); // Exclude starting hex
 }
 
-function highlightMoveRange(q, r, move) {
-    console.log('Highlighting move range:', { q, r, move });
-    const { distances } = dijkstra(q, r, move);
-    const highlights = group.getObjectByName("highlights") || new THREE.Group();
-    highlights.name = "highlights";
-    while (highlights.children.length > 0) highlights.remove(highlights.children[0]);
+function highlightMoveRange(unit) {
+    // Clear previous highlights
+    clearHighlights();
 
-    const shape = createHexShape();
-    const geometry = new THREE.ShapeGeometry(shape);
-    const material = new THREE.MeshBasicMaterial({
-        color: 0xffff00,
-        transparent: true,
-        opacity: 0.5,
-        side: THREE.DoubleSide
-    });
+    // Get the unit's position
+    const q = unit.userData.q;
+    const r = unit.userData.r;
 
-    let highlightedCount = 0;
-    // Highlight all hexes within movement range
-    distances.forEach((distance, key) => {
-        if (distance <= move) {
-            const [hexQ, hexR] = key.split(',').map(Number);
-            const hex = hexGrid.find(h => h.userData.q === hexQ && h.userData.r === hexR);
-            if (hex && hex.userData.moveCost !== Infinity) {
-                const highlight = new THREE.Mesh(geometry, material);
-                const pos = getWorldPosition(hex.userData.q, hex.userData.r, hex.userData.height + 0.01);
-                highlight.position.copy(pos);
-                highlight.rotation.x = -Math.PI / 2;
-                highlights.add(highlight);
-                highlightedCount++;
-            }
+    // Get all hexes within the unit's move range
+    const neighbors = getHexesInRange(q, r, unit.userData.move);
+
+    // Highlight each neighbor if it exists and isn't occupied
+    neighbors.forEach(hex => {
+        if (!isHexOccupied(hex.userData.q, hex.userData.r, unit)) {
+            highlightHex(hex);
         }
     });
-
-    console.log('Highlighting complete:', {
-        totalHexes: distances.size,
-        highlightedCount,
-        moveRange: move
-    });
-
-    group.add(highlights);
 }
 
 function moveUnit(unit, path) {
@@ -339,7 +366,7 @@ function isValidMove(unit, targetHex) {
 function handleUnitSelection(unit) {
     selectedUnit = unit;
     clearPathLine();
-    highlightMoveRange(unit.userData.q, unit.userData.r, unit.userData.move);
+    highlightMoveRange(unit);
 }
 
 function handleUnitMovement(unit, targetHex) {
@@ -353,6 +380,83 @@ function handleUnitMovement(unit, targetHex) {
         return true;
     }
     return false;
+}
+
+function highlightHex(hex) {
+    const highlights = group.getObjectByName("highlights") || new THREE.Group();
+    highlights.name = "highlights";
+
+    const shape = createHexShape();
+    const geometry = new THREE.ShapeGeometry(shape);
+    const material = new THREE.MeshBasicMaterial({
+        color: 0xffff00,
+        transparent: true,
+        opacity: 0.5,
+        side: THREE.DoubleSide
+    });
+
+    const highlight = new THREE.Mesh(geometry, material);
+    const pos = getWorldPosition(hex.userData.q, hex.userData.r, hex.userData.height + 0.01);
+    highlight.position.copy(pos);
+    highlight.rotation.x = -Math.PI / 2;
+    highlights.add(highlight);
+
+    group.add(highlights);
+}
+
+function getHexesInRange(q, r, range) {
+    const hexes = [];
+    const visited = new Set();
+    const queue = [{ q, r, distance: 0 }];
+    visited.add(`${q},${r}`);
+
+    while (queue.length > 0) {
+        const current = queue.shift();
+        if (current.distance >= range) continue;
+
+        const isOddColumn = current.q % 2 === 1;
+
+        // Get all six neighbors using the correct even/odd column offsets
+        const neighbors = [
+            // NW
+            { q: current.q - 1, r: current.r - (isOddColumn ? 0 : 1) },
+            // N
+            { q: current.q, r: current.r - 1 },
+            // NE
+            { q: current.q + 1, r: current.r - (isOddColumn ? 0 : 1) },
+            // SE
+            { q: current.q + 1, r: current.r + 1 - (isOddColumn ? 0 : 1) },
+            // S
+            { q: current.q, r: current.r + 1 },
+            // SW
+            { q: current.q - 1, r: current.r + 1 - (isOddColumn ? 0 : 1) }
+        ];
+
+        // Process each neighbor
+        neighbors.forEach(neighbor => {
+            const key = `${neighbor.q},${neighbor.r}`;
+            if (visited.has(key)) return;
+
+            // Check if the hex is within map bounds
+            if (neighbor.q < 0 || neighbor.q >= MAP_COLS ||
+                neighbor.r < 0 || neighbor.r >= MAP_ROWS) {
+                return;
+            }
+
+            const hex = findHex(neighbor.q, neighbor.r);
+            if (hex && hex.userData.moveCost !== Infinity) {
+                hexes.push(hex);
+                visited.add(key);
+                queue.push({
+                    q: neighbor.q,
+                    r: neighbor.r,
+                    distance: current.distance + 1
+                });
+            }
+        });
+    }
+
+    return hexes;
 }
 
 console.log('utils.js loaded');

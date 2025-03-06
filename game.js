@@ -77,6 +77,9 @@ function setupEventListeners(matrices) {
             const worldPos = getWorldPosition(hexGroup.userData.q, hexGroup.userData.r, hexGroup.userData.height + 0.01);
             highlightOutline.position.copy(worldPos);
             highlightOutline.visible = true;
+
+            // Show grid coordinates
+            console.log(`Tile: (${hexGroup.userData.q}, ${hexGroup.userData.r})`);
         } else {
             highlightOutline.visible = false;
         }
@@ -195,3 +198,86 @@ function initGame() {
 }
 
 console.log('game.js loaded, initGame defined');
+
+function onMouseMove(event) {
+    if (!isDragging) return;
+
+    const deltaX = event.clientX - previousMousePosition.x;
+    const deltaY = event.clientY - previousMousePosition.y;
+
+    camera.position.x -= deltaX * 0.01;
+    camera.position.z -= deltaY * 0.01;
+
+    previousMousePosition.x = event.clientX;
+    previousMousePosition.y = event.clientY;
+}
+
+function onMouseClick(event) {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = getHexIntersects(raycaster);
+
+    if (intersects.length > 0) {
+        const hexGroup = intersects[0].object.parent;
+        console.log('Clicked hex coordinates:', {
+            q: hexGroup.userData.q,
+            r: hexGroup.userData.r,
+            x: hexGroup.userData.x,
+            z: hexGroup.userData.z
+        });
+
+        if (selectedUnit) {
+            if (handleUnitMovement(selectedUnit, hexGroup)) {
+                console.log('Unit moved successfully');
+            } else {
+                console.log('Invalid move');
+            }
+        } else {
+            const unit = allUnits.find(u => u.userData.q === hexGroup.userData.q && u.userData.r === hexGroup.userData.r);
+            if (unit) {
+                handleUnitSelection(unit);
+                console.log('Selected unit at:', {
+                    q: unit.userData.q,
+                    r: unit.userData.r
+                });
+            }
+        }
+    }
+}
+
+// Add hover effect
+function onMouseMove(event) {
+    if (isDragging) {
+        const deltaX = event.clientX - previousMousePosition.x;
+        const deltaY = event.clientY - previousMousePosition.y;
+
+        camera.position.x -= deltaX * 0.01;
+        camera.position.z -= deltaY * 0.01;
+
+        previousMousePosition.x = event.clientX;
+        previousMousePosition.y = event.clientY;
+        return;
+    }
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = getHexIntersects(raycaster);
+
+    if (intersects.length > 0) {
+        const hexGroup = intersects[0].object.parent;
+        console.log('Hovering over hex:', {
+            q: hexGroup.userData.q,
+            r: hexGroup.userData.r,
+            x: hexGroup.userData.x,
+            z: hexGroup.userData.z
+        });
+    }
+}
