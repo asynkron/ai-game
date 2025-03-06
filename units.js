@@ -16,7 +16,6 @@ function initUnits() {
 }
 
 function createUnit(type, q, r, playerIndex) {
-    const pos = getHexPosition(q, r);
     const unitGroup = new THREE.Group();
 
     const canvas = document.createElement('canvas');
@@ -40,7 +39,6 @@ function createUnit(type, q, r, playerIndex) {
     unitSprite.position.y = 0.9; // Above tallest tile (0.5) + sprite offset
     unitGroup.add(unitSprite);
 
-    unitGroup.position.set(pos.x, 0, pos.z);
     unitGroup.userData = { type, q, r, hp: unitTypes[type].hp, maxHp: unitTypes[type].maxHp, move: unitTypes[type].move, attack: unitTypes[type].attack, range: unitTypes[type].range, playerIndex };
     group.add(unitGroup);
     players[playerIndex].units.push(unitGroup);
@@ -50,10 +48,16 @@ function createUnit(type, q, r, playerIndex) {
         new THREE.BoxGeometry(1, 1, 1),
         new THREE.MeshBasicMaterial({ color: players[playerIndex].color })
     );
-    miniUnit.position.set(pos.x, 0.5, pos.z);
-    miniUnit.visible = true;
+    miniUnit.scale.set(0.5, 0.5, 0.5);
+    miniUnit.position.y = 0.5;
     miniMapScene.add(miniUnit);
     unitGroup.userData.miniUnit = miniUnit;
+
+    // Set initial position using the new function
+    const hex = findHex(q, r);
+    if (hex) {
+        setUnitPosition(unitGroup, q, r, hex);
+    }
 
     return unitGroup;
 }

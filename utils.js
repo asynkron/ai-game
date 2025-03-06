@@ -251,18 +251,22 @@ function highlightMoveRange(unit) {
     });
 }
 
+function setUnitPosition(unit, q, r, hex) {
+    const pos = getWorldPosition(q, r);
+    unit.position.set(pos.x, hex.userData.height + 0.1, pos.z);
+    unit.userData.q = q;
+    unit.userData.r = r;
+
+    // Update minimap unit position
+    const miniPos = getWorldPosition(q, r, 0.5);
+    unit.userData.miniUnit.position.copy(miniPos);
+}
+
 function moveUnit(unit, path) {
     let delay = 0;
     path.forEach((hex) => {
         setTimeout(() => {
-            const pos = getWorldPosition(hex.userData.q, hex.userData.r);
-            unit.position.copy(pos);
-            unit.userData.q = hex.userData.q;
-            unit.userData.r = hex.userData.r;
-
-            // Update minimap unit position
-            const miniPos = getWorldPosition(hex.userData.q, hex.userData.r, 0.5);
-            unit.userData.miniUnit.position.copy(miniPos);
+            setUnitPosition(unit, hex.userData.q, hex.userData.r, hex);
         }, delay);
         delay += 200;
     });
