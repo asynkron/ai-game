@@ -72,15 +72,17 @@ function createMap() {
 
 function createHexPrism(color, x, z, height) {
     const geometry = createHexGeometry(HEX_RADIUS, height);
-    const material = new THREE.MeshBasicMaterial({
+    const material = new THREE.MeshStandardMaterial({
         color,
         side: THREE.DoubleSide,
-        wireframe: false,
-        opacity: 1,
-        transparent: false
+        metalness: 0.1,
+        roughness: 0.8,
+        flatShading: true
     });
     const hexPrism = new THREE.Mesh(geometry, material);
     hexPrism.position.set(x, height / 2, z);
+    hexPrism.castShadow = true;
+    hexPrism.receiveShadow = true;
 
     const hexGroup = new THREE.Group();
     hexGroup.add(hexPrism);

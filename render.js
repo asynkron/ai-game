@@ -1,16 +1,35 @@
 // Scene Objects
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 const group = new THREE.Group();
 const miniMapScene = new THREE.Scene();
 let cameraHeight = INITIAL_CAMERA_HEIGHT;
 
+// Lighting Setup
+function setupLighting() {
+    // Ambient light for overall scene brightness
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+    scene.add(ambientLight);
+
+    // Directional light (sunlight)
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(50, 100, 50);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+    // Add some fog for depth
+    scene.fog = new THREE.Fog(0xf0f0f0, 50, 100);
+}
+
 // Renderer Initialization
 function initRenderer() {
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
     scene.add(group);
+    setupLighting();
 }
 
 // Camera Setup
