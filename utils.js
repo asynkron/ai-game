@@ -72,18 +72,153 @@ function getDistance(q1, r1, q2, r2) {
     return Math.max(Math.abs(q1 - q2), Math.abs(r1 - r2), Math.abs((q1 + r1) - (q2 + r2)));
 }
 
-function getPath(q1, r1, q2, r2, move) {
-    // Simplified stub—replace with actual pathfinding if needed
-    const path = [];
-    const steps = Math.min(move, Math.max(Math.abs(q2 - q1), Math.abs(r2 - r1)));
-    for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const q = Math.round(q1 + (q2 - q1) * t);
-        const r = Math.round(r1 + (r2 - r1) * t);
-        const hex = hexGrid.find(h => h.userData.q === q && h.userData.r === r);
-        if (hex) path.push(hex);
+// Dijkstra's algorithm implementation
+function dijkstra(startQ, startR, maxCost = Infinity) {
+    console.log('Dijkstra starting:', { startQ, startR, maxCost });
+    const distances = new Map();
+    const previous = new Map();
+    const unvisited = new Set();
+    const visited = new Set();
+
+    // Initialize distances
+    hexGrid.forEach(hex => {
+        const key = `${hex.userData.q},${hex.userData.r}`;
+        distances.set(key, Infinity);
+        unvisited.add(key);
+    });
+
+    // Set start distance to 0
+    const startKey = `${startQ},${startR}`;
+    distances.set(startKey, 0);
+    console.log('Initial distances:', Array.from(distances.entries()).slice(0, 5));
+
+    while (unvisited.size > 0) {
+        // Find unvisited hex with smallest distance
+        let currentKey = null;
+        let minDistance = Infinity;
+        unvisited.forEach(key => {
+            if (distances.get(key) < minDistance) {
+                minDistance = distances.get(key);
+                currentKey = key;
+            }
+        });
+
+        // If we've exceeded maxCost, we can stop
+        if (minDistance > maxCost) break;
+
+        // Remove current hex from unvisited
+        unvisited.delete(currentKey);
+        visited.add(currentKey);
+
+        // Get current hex coordinates
+        const [currentQ, currentR] = currentKey.split(',').map(Number);
+        const currentHex = hexGrid.find(h => h.userData.q === currentQ && h.userData.r === currentR);
+        if (!currentHex) continue;
+
+        // Get all neighboring hexes
+        const neighbors = getHexesInRange(currentQ, currentR, 1);
+        console.log('Processing neighbors for', currentKey, ':', neighbors.length, 'neighbors found');
+
+        neighbors.forEach(neighbor => {
+            const neighborKey = `${neighbor.userData.q},${neighbor.userData.r}`;
+            if (visited.has(neighborKey)) return;
+
+            // Check if hex is occupied by another unit
+            const isOccupied = allUnits.some(unit =>
+                unit.userData.q === neighbor.userData.q &&
+                unit.userData.r === neighbor.userData.r
+            );
+            if (isOccupied) {
+                console.log('Neighbor', neighborKey, 'is occupied by a unit');
+                return;
+            }
+
+            // Calculate cost to reach this neighbor
+            const cost = neighbor.userData.moveCost;
+            if (cost === Infinity) {
+                console.log('Neighbor', neighborKey, 'is impassable (cost = Infinity)');
+                return;
+            }
+
+            const newDistance = distances.get(currentKey) + cost;
+            console.log('Checking neighbor', neighborKey, ':', {
+                currentDistance: distances.get(neighborKey),
+                newDistance,
+                cost
+            });
+
+            // Update distance if we found a shorter path
+            if (newDistance < distances.get(neighborKey)) {
+                distances.set(neighborKey, newDistance);
+                previous.set(neighborKey, currentKey);
+            }
+        });
     }
+
+    console.log('Dijkstra finished. Final distances:', Array.from(distances.entries()).slice(0, 5));
+    return { distances, previous };
+}
+
+function getPath(q1, r1, q2, r2, move) {
+    const { distances, previous } = dijkstra(q1, r1, move);
+    const path = [];
+    let currentKey = `${q2},${r2}`;
+
+    // Reconstruct path
+    while (previous.has(currentKey)) {
+        const [q, r] = currentKey.split(',').map(Number);
+        const hex = hexGrid.find(h => h.userData.q === q && h.userData.r === r);
+        if (hex) path.unshift(hex);
+        currentKey = previous.get(currentKey);
+    }
+
+    // Add start hex
+    const startHex = hexGrid.find(h => h.userData.q === q1 && h.userData.r === r1);
+    if (startHex) path.unshift(startHex);
+
     return path.slice(1); // Exclude starting hex
+}
+
+function highlightMoveRange(q, r, move) {
+    console.log('Highlighting move range:', { q, r, move });
+    const { distances } = dijkstra(q, r, move);
+    const highlights = group.getObjectByName("highlights") || new THREE.Group();
+    highlights.name = "highlights";
+    while (highlights.children.length > 0) highlights.remove(highlights.children[0]);
+
+    const shape = createHexShape();
+    const geometry = new THREE.ShapeGeometry(shape);
+    const material = new THREE.MeshBasicMaterial({
+        color: 0xffff00,
+        transparent: true,
+        opacity: 0.5,
+        side: THREE.DoubleSide
+    });
+
+    let highlightedCount = 0;
+    // Highlight all hexes within movement range
+    distances.forEach((distance, key) => {
+        if (distance <= move) {
+            const [hexQ, hexR] = key.split(',').map(Number);
+            const hex = hexGrid.find(h => h.userData.q === hexQ && h.userData.r === hexR);
+            if (hex && hex.userData.moveCost !== Infinity) {
+                const highlight = new THREE.Mesh(geometry, material);
+                const pos = getWorldPosition(hex.userData.q, hex.userData.r, hex.userData.height + 0.01);
+                highlight.position.copy(pos);
+                highlight.rotation.x = -Math.PI / 2;
+                highlights.add(highlight);
+                highlightedCount++;
+            }
+        }
+    });
+
+    console.log('Highlighting complete:', {
+        totalHexes: distances.size,
+        highlightedCount,
+        moveRange: move
+    });
+
+    group.add(highlights);
 }
 
 function moveUnit(unit, path) {
@@ -101,37 +236,6 @@ function moveUnit(unit, path) {
         }, delay);
         delay += 200;
     });
-}
-
-function highlightMoveRange(q, r, move) {
-    const highlights = group.getObjectByName("highlights") || new THREE.Group();
-    highlights.name = "highlights";
-    while (highlights.children.length > 0) highlights.remove(highlights.children[0]);
-
-    const shape = createHexShape();
-    const geometry = new THREE.ShapeGeometry(shape);
-    const material = new THREE.MeshBasicMaterial({
-        color: 0xffff00,
-        transparent: true,
-        opacity: 0.5,
-        side: THREE.DoubleSide
-    });
-
-    for (let dq = -move; dq <= move; dq++) {
-        for (let dr = -move; dr <= move; dr++) {
-            if (Math.abs(dq) + Math.abs(dr) + Math.abs(-dq - dr) <= move * 2) {
-                const hex = hexGrid.find(h => h.userData.q === q + dq && h.userData.r === r + dr);
-                if (hex && hex.userData.moveCost !== Infinity) {
-                    const highlight = new THREE.Mesh(geometry, material);
-                    const pos = getWorldPosition(hex.userData.q, hex.userData.r, hex.userData.height + 0.01);
-                    highlight.position.copy(pos);
-                    highlight.rotation.x = -Math.PI / 2;
-                    highlights.add(highlight);
-                }
-            }
-        }
-    }
-    group.add(highlights);
 }
 
 function drawPath(unit, path) {

@@ -24,6 +24,7 @@ function createMap() {
 
     for (let q = 0; q < MAP_COLS; q++) {
         for (let r = 0; r < MAP_ROWS; r++) {
+            // Calculate x and z positions correctly for odd/even columns
             const x = HEX_RADIUS * 1.5 * q;
             const z = HEX_RADIUS * Math.sqrt(3) * (r + (q % 2) / 2);
             const n = ((perlinNoise(q / PERLIN_SCALE, r / PERLIN_SCALE) + 1) / 2) + (Math.random() - 0.5) * 0.1;
@@ -52,6 +53,8 @@ function createMap() {
             }
 
             const hex = createHexPrism(color, x, z, height);
+            hex.userData.q = q;  // Store the actual grid coordinates
+            hex.userData.r = r;
             group.add(hex);
             addHex(hex);
 
@@ -102,8 +105,9 @@ function createHexPrism(color, x, z, height) {
         x: x,
         z: z,
         height: height,
-        q: Math.round(x / (HEX_RADIUS * 1.5)),
-        r: Math.round((z / (HEX_RADIUS * Math.sqrt(3))) - (Math.round(x / (HEX_RADIUS * 1.5)) % 2) / 2)
+        moveCost: material.color.getHex() === 0x0000ff ? Infinity : // Water
+            material.color.getHex() === 0x808080 ? 2 : // Mountain
+                1 // Grass and Forest
     };
 
     return hexGroup;
