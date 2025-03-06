@@ -23,7 +23,7 @@ function setupLighting() {
 }
 
 // Renderer Initialization
-function initRenderer() {
+window.initRenderer = function () {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;

@@ -4,8 +4,9 @@
 // const HEX_RADIUS = 5;
 // const MAP_TILT_ANGLE = Math.PI / 6;
 
-//let group;
-//group = new THREE.Group();
+function addHex(hex) {
+    hexGrid.push(hex);
+}
 
 function createMap() {
     const mapCenterX = (MAP_COLS * HEX_RADIUS * 1.5) / 2;
