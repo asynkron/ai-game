@@ -237,15 +237,27 @@ function highlightMoveRange(unit) {
     const q = unit.userData.q;
     const r = unit.userData.r;
 
-    // Get all hexes within the unit's move range
-    const neighbors = getHexesInRange(q, r, unit.userData.move);
+    // Calculate the bounding box for the range
+    const minQ = Math.max(0, q - unit.userData.move);
+    const maxQ = Math.min(MAP_COLS - 1, q + unit.userData.move);
+    const minR = Math.max(0, r - unit.userData.move);
+    const maxR = Math.min(MAP_ROWS - 1, r + unit.userData.move);
 
-    // Highlight each neighbor if it exists and isn't occupied
-    neighbors.forEach(hex => {
-        if (!isHexOccupied(hex.userData.q, hex.userData.r, unit)) {
-            highlightHex(hex);
+    // Check each hex within the bounding box
+    for (let checkQ = minQ; checkQ <= maxQ; checkQ++) {
+        for (let checkR = minR; checkR <= maxR; checkR++) {
+            // Calculate the distance to this hex
+            const distance = getDistance(q, r, checkQ, checkR);
+
+            // If the hex is within range, highlight it if it's not occupied
+            if (distance <= unit.userData.move) {
+                const hex = findHex(checkQ, checkR);
+                if (hex && !isHexOccupied(checkQ, checkR, unit)) {
+                    highlightHex(hex);
+                }
+            }
         }
-    });
+    }
 }
 
 function moveUnit(unit, path) {
