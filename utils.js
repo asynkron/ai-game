@@ -106,6 +106,7 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
     const previous = new Map();
     const unvisited = new Set();
     const visited = new Set();
+    const reachable = new Set();
 
     // Initialize distances
     hexGrid.forEach(hex => {
@@ -117,7 +118,7 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
     // Set start distance to 0
     const startKey = `${startQ},${startR}`;
     distances.set(startKey, 0);
-    console.log('Initial distances:', Array.from(distances.entries()).slice(0, 5));
+    reachable.add(startKey);
 
     while (unvisited.size > 0) {
         // Find unvisited hex with smallest distance
@@ -183,10 +184,14 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
                 return;
             }
 
-            // Calculate cost to reach this neighbor
-            const cost = neighborHex.userData.moveCost;
+            // Calculate cost to reach this neighbor based on terrain
+            let cost = 1; // Default cost for grass and forest
+            if (neighborHex.userData.type === 'water' || neighborHex.userData.type === 'mountain') {
+                cost = Infinity; // Impassable terrain
+            }
+
             if (cost === Infinity) {
-                console.log('Neighbor', neighborKey, 'is impassable (cost = Infinity)');
+                console.log('Neighbor', neighborKey, 'is impassable terrain');
                 return;
             }
 
@@ -194,38 +199,58 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
             console.log('Checking neighbor', neighborKey, ':', {
                 currentDistance: distances.get(neighborKey),
                 newDistance,
-                cost
+                cost,
+                terrain: neighborHex.userData.type
             });
 
             // Update distance if we found a shorter path
             if (newDistance < distances.get(neighborKey)) {
                 distances.set(neighborKey, newDistance);
                 previous.set(neighborKey, currentKey);
+                reachable.add(neighborKey);
+                console.log('Updated path to', neighborKey, 'from', currentKey);
             }
         });
     }
 
-    console.log('Dijkstra finished. Final distances:', Array.from(distances.entries()).slice(0, 5));
-    return { distances, previous };
+    console.log('Dijkstra finished. Found', reachable.size, 'reachable tiles');
+    console.log('Previous tiles:', Object.fromEntries(previous));
+    return { distances, previous, reachable };
 }
 
 function getPath(q1, r1, q2, r2, move) {
-    const { distances, previous } = dijkstra(q1, r1, move);
+    console.log('Getting path from', q1, r1, 'to', q2, r2, 'with move', move);
+    const { previous, distances } = dijkstra(q1, r1, move);
     const path = [];
     let currentKey = `${q2},${r2}`;
 
-    // Reconstruct path
+    // Check if target is reachable within move range
+    if (distances.get(currentKey) > move) {
+        console.log('Target is not reachable within move range');
+        return [];
+    }
+
+    console.log('Starting path reconstruction from', currentKey);
+    // Reconstruct path by backtracking from target to start
     while (previous.has(currentKey)) {
         const [q, r] = currentKey.split(',').map(Number);
         const hex = hexGrid.find(h => h.userData.q === q && h.userData.r === r);
-        if (hex) path.unshift(hex);
+        if (hex) {
+            path.unshift(hex);
+            console.log('Added to path:', q, r);
+        }
         currentKey = previous.get(currentKey);
+        console.log('Moving to previous tile:', currentKey);
     }
 
     // Add start hex
     const startHex = hexGrid.find(h => h.userData.q === q1 && h.userData.r === r1);
-    if (startHex) path.unshift(startHex);
+    if (startHex) {
+        path.unshift(startHex);
+        console.log('Added start hex:', q1, r1);
+    }
 
+    console.log('Final path:', path.map(h => `${h.userData.q},${h.userData.r}`));
     return path.slice(1); // Exclude starting hex
 }
 
@@ -237,27 +262,18 @@ function highlightMoveRange(unit) {
     const q = unit.userData.q;
     const r = unit.userData.r;
 
-    // Calculate the bounding box for the range
-    const minQ = Math.max(0, q - unit.userData.move);
-    const maxQ = Math.min(MAP_COLS - 1, q + unit.userData.move);
-    const minR = Math.max(0, r - unit.userData.move);
-    const maxR = Math.min(MAP_ROWS - 1, r + unit.userData.move);
+    // Get all reachable tiles using Dijkstra
+    const { reachable, distances } = dijkstra(q, r, unit.userData.move);
 
-    // Check each hex within the bounding box
-    for (let checkQ = minQ; checkQ <= maxQ; checkQ++) {
-        for (let checkR = minR; checkR <= maxR; checkR++) {
-            // Calculate the distance to this hex
-            const distance = getDistance(q, r, checkQ, checkR);
-
-            // If the hex is within range, highlight it if it's not occupied
-            if (distance <= unit.userData.move) {
-                const hex = findHex(checkQ, checkR);
-                if (hex && !isHexOccupied(checkQ, checkR, unit)) {
-                    highlightHex(hex);
-                }
-            }
+    // Highlight each reachable tile that's within move range
+    reachable.forEach(key => {
+        const [checkQ, checkR] = key.split(',').map(Number);
+        const hex = findHex(checkQ, checkR);
+        // Only highlight if the distance is within move range
+        if (hex && !isHexOccupied(checkQ, checkR, unit) && distances.get(key) <= unit.userData.move) {
+            highlightHex(hex);
         }
-    }
+    });
 }
 
 function moveUnit(unit, path) {
