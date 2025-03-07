@@ -16,7 +16,7 @@ class HexCoord {
     }
 
     static findHex(q, r) {
-        return hexGrid.find(h => h.userData.q === q && h.userData.r === r);
+        return GridSystem.findHex(q, r);
     }
 
     static getHexPosition(q, r) {

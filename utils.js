@@ -85,15 +85,7 @@ function noise(q, r) {
 }
 
 function getHexIntersects(raycaster) {
-    const intersectObjects = [];
-    hexGrid.forEach(hexGroup => {
-        hexGroup.children.forEach(child => {
-            if (child instanceof THREE.Mesh) {
-                intersectObjects.push(child);
-            }
-        });
-    });
-    return raycaster.intersectObjects(intersectObjects);
+    return GridSystem.getHexIntersects(raycaster);
 }
 
 function getMinimapWorldPosition(event, minimapOverlay) {
