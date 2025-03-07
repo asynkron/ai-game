@@ -117,7 +117,94 @@ function getHexNeighbors(q, r) {
     ];
 }
 
-// Dijkstra's algorithm implementation
+// Utility functions for hex grid operations
+function isWithinMapBounds(q, r) {
+    return q >= 0 && q < MAP_COLS && r >= 0 && r < MAP_ROWS;
+}
+
+function findHex(q, r) {
+    return hexGrid.find(h => h.userData.q === q && h.userData.r === r);
+}
+
+function getHexKey(q, r) {
+    return `${q},${r}`;
+}
+
+function isImpassableTerrain(hex) {
+    return hex.userData.type === 'water' || hex.userData.type === 'mountain';
+}
+
+function getTerrainMoveCost(hex) {
+    return isImpassableTerrain(hex) ? Infinity : 1;
+}
+
+function getValidNeighbors(q, r, visited = new Set()) {
+    const neighbors = getHexNeighbors(q, r);
+    return neighbors.filter(neighbor => {
+        const key = getHexKey(neighbor.q, neighbor.r);
+        if (visited.has(key)) return false;
+        if (!isWithinMapBounds(neighbor.q, neighbor.r)) return false;
+        const hex = findHex(neighbor.q, neighbor.r);
+        return hex !== undefined;
+    }).map(neighbor => ({
+        ...neighbor,
+        hex: findHex(neighbor.q, neighbor.r)
+    }));
+}
+
+// Hex coordinate class for consistent coordinate handling
+class HexCoord {
+    constructor(q, r) {
+        this.q = q;
+        this.r = r;
+    }
+
+    static fromKey(key) {
+        const [q, r] = key.split(',').map(Number);
+        return new HexCoord(q, r);
+    }
+
+    getKey() {
+        return getHexKey(this.q, this.r);
+    }
+
+    getHex() {
+        return findHex(this.q, this.r);
+    }
+
+    isValid() {
+        return isWithinMapBounds(this.q, this.r);
+    }
+
+    getNeighbors() {
+        return getHexNeighbors(this.q, this.r).map(n => new HexCoord(n.q, n.r));
+    }
+
+    getValidNeighbors(visited = new Set()) {
+        return this.getNeighbors()
+            .filter(n => n.isValid() && !visited.has(n.getKey()))
+            .map(n => ({
+                coord: n,
+                hex: n.getHex()
+            }))
+            .filter(n => n.hex !== undefined);
+    }
+
+    distanceTo(other) {
+        return getDistance(this.q, this.r, other.q, other.r);
+    }
+
+    getWorldPosition(height = 0) {
+        const pos = getHexPosition(this.q, this.r);
+        return new THREE.Vector3(pos.x, height, pos.z);
+    }
+
+    isOccupied(excludeUnit = null) {
+        return isHexOccupied(this.q, this.r, excludeUnit);
+    }
+}
+
+// Update dijkstra to use HexCoord
 function dijkstra(startQ, startR, maxCost = Infinity) {
     const distances = new Map();
     const previous = new Map();
@@ -127,18 +214,18 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
 
     // Initialize distances
     hexGrid.forEach(hex => {
-        const key = `${hex.userData.q},${hex.userData.r}`;
+        const coord = new HexCoord(hex.userData.q, hex.userData.r);
+        const key = coord.getKey();
         distances.set(key, Infinity);
         unvisited.add(key);
     });
 
-    // Set start distance to 0
-    const startKey = `${startQ},${startR}`;
+    const startCoord = new HexCoord(startQ, startR);
+    const startKey = startCoord.getKey();
     distances.set(startKey, 0);
     reachable.add(startKey);
 
     while (unvisited.size > 0) {
-        // Find unvisited hex with smallest distance
         let currentKey = null;
         let minDistance = Infinity;
         unvisited.forEach(key => {
@@ -148,53 +235,29 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
             }
         });
 
-        // If we've exceeded maxCost, we can stop
         if (minDistance > maxCost) break;
 
-        // Remove current hex from unvisited
         unvisited.delete(currentKey);
         visited.add(currentKey);
 
-        // Get current hex coordinates
-        const [currentQ, currentR] = currentKey.split(',').map(Number);
-        const currentHex = hexGrid.find(h => h.userData.q === currentQ && h.userData.r === currentR);
+        const currentCoord = HexCoord.fromKey(currentKey);
+        const currentHex = currentCoord.getHex();
         if (!currentHex) continue;
 
-        // Get neighbors using the new function
-        const neighbors = getHexNeighbors(currentQ, currentR);
+        const validNeighbors = currentCoord.getValidNeighbors(visited);
 
-        // Process each neighbor
-        neighbors.forEach(neighbor => {
-            const neighborKey = `${neighbor.q},${neighbor.r}`;
-            if (visited.has(neighborKey)) return;
+        validNeighbors.forEach(({ coord, hex }) => {
+            if (isHexOccupied(coord.q, coord.r)) return;
 
-            // Check if the hex is within map bounds
-            if (neighbor.q < 0 || neighbor.q >= MAP_COLS ||
-                neighbor.r < 0 || neighbor.r >= MAP_ROWS) {
-                return;
-            }
-
-            const neighborHex = hexGrid.find(h => h.userData.q === neighbor.q && h.userData.r === neighbor.r);
-            if (!neighborHex) return;
-
-            // Check if hex is occupied
-            if (isHexOccupied(neighbor.q, neighbor.r)) return;
-
-            // Calculate cost to reach this neighbor based on terrain
-            let cost = 1; // Default cost for grass and forest
-            if (neighborHex.userData.type === 'water' || neighborHex.userData.type === 'mountain') {
-                cost = Infinity; // Impassable terrain
-            }
-
+            const neighborKey = coord.getKey();
+            const cost = getTerrainMoveCost(hex);
             if (cost === Infinity) return;
 
             const newDistance = distances.get(currentKey) + cost;
 
-            // Update distance if we found a shorter path
             if (newDistance < distances.get(neighborKey)) {
                 distances.set(neighborKey, newDistance);
                 previous.set(neighborKey, currentKey);
-                // Only add to reachable if within move range
                 if (newDistance <= maxCost) {
                     reachable.add(neighborKey);
                 }
@@ -206,63 +269,56 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
 }
 
 function getPath(q1, r1, q2, r2, move) {
-    const { previous, reachable } = dijkstra(q1, r1, move);
+    const startCoord = new HexCoord(q1, r1);
+    const endCoord = new HexCoord(q2, r2);
+    const { previous, reachable } = dijkstra(startCoord.q, startCoord.r, move);
     const path = [];
-    let currentKey = `${q2},${r2}`;
+    let currentKey = endCoord.getKey();
 
-    // Check if target is reachable
     if (!reachable.has(currentKey)) {
         return [];
     }
 
-    // Reconstruct path by backtracking from target to start
     while (previous.has(currentKey)) {
-        const [q, r] = currentKey.split(',').map(Number);
-        const hex = hexGrid.find(h => h.userData.q === q && h.userData.r === r);
+        const coord = HexCoord.fromKey(currentKey);
+        const hex = coord.getHex();
         if (hex) {
             path.unshift(hex);
         }
         currentKey = previous.get(currentKey);
     }
 
-    // Add start hex
-    const startHex = hexGrid.find(h => h.userData.q === q1 && h.userData.r === r1);
+    const startHex = startCoord.getHex();
     if (startHex) {
         path.unshift(startHex);
     }
 
-    return path.slice(1); // Exclude starting hex
+    return path.slice(1);
 }
 
 function highlightMoveRange(unit) {
-    // Clear previous highlights
     clearHighlights();
 
-    // Get the unit's position
-    const q = unit.userData.q;
-    const r = unit.userData.r;
+    const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
+    const { reachable } = dijkstra(unitCoord.q, unitCoord.r, unit.userData.move);
 
-    // Get all reachable tiles using Dijkstra
-    const { reachable } = dijkstra(q, r, unit.userData.move);
-
-    // Highlight each reachable tile
     reachable.forEach(key => {
-        const [checkQ, checkR] = key.split(',').map(Number);
-        const hex = findHex(checkQ, checkR);
-        if (hex && !isHexOccupied(checkQ, checkR, unit)) {
+        const coord = HexCoord.fromKey(key);
+        const hex = coord.getHex();
+        if (hex && !coord.isOccupied(unit)) {
             highlightHex(hex);
         }
     });
 }
 
 function setUnitPosition(unit, q, r, hex) {
-    const pos = getWorldPosition(q, r);
-    unit.position.set(pos.x, hex.userData.height + 0.1, pos.z);
+    const coord = new HexCoord(q, r);
+    const pos = coord.getWorldPosition(hex.userData.height + 0.1);
+    unit.position.copy(pos);
     unit.userData.q = q;
     unit.userData.r = r;
 
-    // Update minimap unit position
-    const miniPos = getWorldPosition(q, r, 0.5);
+    const miniPos = coord.getWorldPosition(0.5);
     unit.userData.miniUnit.position.copy(miniPos);
 }
 
@@ -283,12 +339,12 @@ function drawPath(unit, path) {
     const points = [];
     const pathHeight = 0.3;
 
-    // Add unit's current position
-    points.push(getWorldPosition(unit.userData.q, unit.userData.r, pathHeight));
+    const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
+    points.push(unitCoord.getWorldPosition(pathHeight));
 
-    // Add each hex in the path
     path.forEach(hex => {
-        points.push(getWorldPosition(hex.userData.q, hex.userData.r, pathHeight));
+        const coord = new HexCoord(hex.userData.q, hex.userData.r);
+        points.push(coord.getWorldPosition(pathHeight));
     });
 
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -368,11 +424,11 @@ function clearHighlights() {
 function isValidMove(unit, targetHex) {
     if (!targetHex || targetHex.userData.moveCost === Infinity) return false;
 
-    // Use Dijkstra to check if the target is reachable
-    const { reachable } = dijkstra(unit.userData.q, unit.userData.r, unit.userData.move);
-    const targetKey = `${targetHex.userData.q},${targetHex.userData.r}`;
+    const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
+    const targetCoord = new HexCoord(targetHex.userData.q, targetHex.userData.r);
+    const { reachable } = dijkstra(unitCoord.q, unitCoord.r, unit.userData.move);
 
-    return reachable.has(targetKey);
+    return reachable.has(targetCoord.getKey());
 }
 
 function handleUnitSelection(unit) {
@@ -382,9 +438,12 @@ function handleUnitSelection(unit) {
 }
 
 function handleUnitMovement(unit, targetHex) {
-    const path = getPath(unit.userData.q, unit.userData.r, targetHex.userData.q, targetHex.userData.r, unit.userData.move);
+    const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
+    const targetCoord = new HexCoord(targetHex.userData.q, targetHex.userData.r);
+    const path = getPath(unitCoord.q, unitCoord.r, targetCoord.q, targetCoord.r, unit.userData.move);
+
     if (path.length > 0) {
-        unit.userData.move -= getDistance(unit.userData.q, unit.userData.r, targetHex.userData.q, targetHex.userData.r);
+        unit.userData.move -= unitCoord.distanceTo(targetCoord);
         moveUnit(unit, path);
         clearPathLine();
         selectedUnit = null;
@@ -408,7 +467,8 @@ function highlightHex(hex) {
     });
 
     const highlight = new THREE.Mesh(geometry, material);
-    const pos = getWorldPosition(hex.userData.q, hex.userData.r, hex.userData.height + 0.01);
+    const coord = new HexCoord(hex.userData.q, hex.userData.r);
+    const pos = coord.getWorldPosition(hex.userData.height + 0.01);
     highlight.position.copy(pos);
     highlight.rotation.x = -Math.PI / 2;
     highlights.add(highlight);
@@ -416,37 +476,26 @@ function highlightHex(hex) {
     group.add(highlights);
 }
 
+// Update getHexesInRange to use HexCoord
 function getHexesInRange(q, r, range) {
     const hexes = [];
     const visited = new Set();
-    const queue = [{ q, r, distance: 0 }];
-    visited.add(`${q},${r}`);
+    const startCoord = new HexCoord(q, r);
+    const queue = [{ coord: startCoord, distance: 0 }];
+    visited.add(startCoord.getKey());
 
     while (queue.length > 0) {
         const current = queue.shift();
         if (current.distance >= range) continue;
 
-        // Get neighbors using the new function
-        const neighbors = getHexNeighbors(current.q, current.r);
+        const validNeighbors = current.coord.getValidNeighbors(visited);
 
-        // Process each neighbor
-        neighbors.forEach(neighbor => {
-            const key = `${neighbor.q},${neighbor.r}`;
-            if (visited.has(key)) return;
-
-            // Check if the hex is within map bounds
-            if (neighbor.q < 0 || neighbor.q >= MAP_COLS ||
-                neighbor.r < 0 || neighbor.r >= MAP_ROWS) {
-                return;
-            }
-
-            const hex = findHex(neighbor.q, neighbor.r);
-            if (hex && hex.userData.moveCost !== Infinity) {
+        validNeighbors.forEach(({ coord, hex }) => {
+            if (getTerrainMoveCost(hex) !== Infinity) {
                 hexes.push(hex);
-                visited.add(key);
+                visited.add(coord.getKey());
                 queue.push({
-                    q: neighbor.q,
-                    r: neighbor.r,
+                    coord,
                     distance: current.distance + 1
                 });
             }
