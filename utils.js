@@ -130,16 +130,7 @@ function getHexKey(q, r) {
     return `${q},${r}`;
 }
 
-// Legacy functions that now use the systems
-function isImpassableTerrain(hex) {
-    return TerrainSystem.isImpassable(hex);
-}
-
-function getTerrainMoveCost(hex) {
-    return TerrainSystem.getMoveCost(hex);
-}
-
-// Update dijkstra to use HexCoord
+// Update dijkstra to use HexCoord and call TerrainSystem directly
 function dijkstra(startQ, startR, maxCost = Infinity) {
     const distances = new Map();
     const previous = new Map();
@@ -185,7 +176,7 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
             if (isHexOccupied(coord.q, coord.r)) return;
 
             const neighborKey = coord.getKey();
-            const cost = getTerrainMoveCost(hex);
+            const cost = TerrainSystem.getMoveCost(hex);
             if (cost === Infinity) return;
 
             const newDistance = distances.get(currentKey) + cost;
@@ -244,45 +235,6 @@ function highlightMoveRange(unit) {
             highlightHex(hex);
         }
     });
-}
-
-// Legacy functions that now use the systems
-function setUnitPosition(unit, q, r, hex) {
-    const coord = new HexCoord(q, r);
-    UnitSystem.setPosition(unit, coord, hex);
-}
-
-function moveUnit(unit, path) {
-    UnitSystem.move(unit, path);
-}
-
-function handleUnitSelection(unit) {
-    UnitSystem.handleSelection(unit);
-}
-
-function handleUnitMovement(unit, targetHex) {
-    return UnitSystem.handleMovement(unit, targetHex);
-}
-
-function isValidMove(unit, targetHex) {
-    return UnitSystem.isValidMove(unit, targetHex);
-}
-
-// Legacy functions that now use the visualization system
-function clearPathLine() {
-    VisualizationSystem.clearPathLine();
-}
-
-function clearHighlights() {
-    VisualizationSystem.clearHighlights();
-}
-
-function highlightHex(hex) {
-    VisualizationSystem.highlightHex(hex);
-}
-
-function drawPath(unit, path) {
-    VisualizationSystem.drawPath(unit, path);
 }
 
 function getHexIntersects(raycaster) {
@@ -353,7 +305,7 @@ function getHexesInRange(q, r, range) {
         const validNeighbors = current.coord.getValidNeighbors(visited);
 
         validNeighbors.forEach(({ coord, hex }) => {
-            if (getTerrainMoveCost(hex) !== Infinity) {
+            if (TerrainSystem.getMoveCost(hex) !== Infinity) {
                 hexes.push(hex);
                 visited.add(coord.getKey());
                 queue.push({

@@ -90,13 +90,13 @@ function setupEventListeners(matrices) {
             updateCameraPosition(deltaX, deltaY, matrices);
             previousMousePosition = { x: event.clientX, y: event.clientY };
         } else if (selectedUnit) {
-            clearPathLine();
+            VisualizationSystem.clearPathLine();
             if (intersects.length > 0) {
                 const hexGroup = intersects[0].object.parent;
-                if (isValidMove(selectedUnit, hexGroup)) {
+                if (UnitSystem.isValidMove(selectedUnit, hexGroup)) {
                     const path = getPath(selectedUnit.userData.q, selectedUnit.userData.r, hexGroup.userData.q, hexGroup.userData.r, selectedUnit.userData.move);
                     if (path.length > 0) {
-                        drawPath(selectedUnit, path);
+                        VisualizationSystem.drawPath(selectedUnit, path);
                     }
                 }
             }
@@ -135,10 +135,10 @@ function setupEventListeners(matrices) {
             const unitOnHex = allUnits.find(u => u.userData.q === hexGroup.userData.q && u.userData.r === hexGroup.userData.r);
 
             if (unitOnHex && currentTurn === 0 && players[0].units.includes(unitOnHex)) {
-                handleUnitSelection(unitOnHex);
+                UnitSystem.handleSelection(unitOnHex);
                 return;
-            } else if (selectedUnit && isValidMove(selectedUnit, hexGroup)) {
-                handleUnitMovement(selectedUnit, hexGroup);
+            } else if (selectedUnit && UnitSystem.isValidMove(selectedUnit, hexGroup)) {
+                UnitSystem.handleMovement(selectedUnit, hexGroup);
             }
             return;
         }
@@ -146,8 +146,8 @@ function setupEventListeners(matrices) {
         // Clear selection if clicking elsewhere
         if (selectedUnit) {
             selectedUnit = null;
-            clearPathLine();
-            clearHighlights();
+            VisualizationSystem.clearPathLine();
+            VisualizationSystem.clearHighlights();
         }
     });
 
@@ -178,8 +178,8 @@ function nextTurn() {
     players[currentTurn].units.forEach(u => u.userData.move = unitTypes[u.userData.type].move);
     if (currentTurn !== 0) cpuTurn();
     selectedUnit = null;
-    clearPathLine();
-    clearHighlights();
+    VisualizationSystem.clearPathLine();
+    VisualizationSystem.clearHighlights();
 }
 
 function cpuTurn() {
@@ -231,7 +231,7 @@ function onMouseClick(event) {
         });
 
         if (selectedUnit) {
-            if (handleUnitMovement(selectedUnit, hexGroup)) {
+            if (UnitSystem.handleMovement(selectedUnit, hexGroup)) {
                 console.log('Unit moved successfully');
             } else {
                 console.log('Invalid move');
@@ -239,7 +239,7 @@ function onMouseClick(event) {
         } else {
             const unit = allUnits.find(u => u.userData.q === hexGroup.userData.q && u.userData.r === hexGroup.userData.r);
             if (unit) {
-                handleUnitSelection(unit);
+                UnitSystem.handleSelection(unit);
                 console.log('Selected unit at:', {
                     q: unit.userData.q,
                     r: unit.userData.r
@@ -301,4 +301,50 @@ function setupLighting() {
 
     // Add fog for depth - adjusted for camera zoom range
     scene.fog = new THREE.Fog(0x87CEEB, 30, 50); // Sky blue color, start at 30 units, end at 50 units
+}
+
+function handleHexClick(event) {
+    // ... existing code ...
+    if (path) {
+        VisualizationSystem.clearPathLine();
+        // Check if the selected unit can move to the clicked hex
+        if (UnitSystem.isValidMove(selectedUnit, hexGroup)) {
+            // Draw the path the unit will take
+            VisualizationSystem.drawPath(selectedUnit, path);
+        }
+    }
+}
+
+function handleHexHover(event) {
+    // ... existing code ...
+    if (unitOnHex && unitOnHex.userData.playerIndex === currentPlayerIndex) {
+        UnitSystem.handleSelection(unitOnHex);
+    } else if (selectedUnit && UnitSystem.isValidMove(selectedUnit, hexGroup)) {
+        UnitSystem.handleMovement(selectedUnit, hexGroup);
+    }
+}
+
+function handleHexLeave(event) {
+    // ... existing code ...
+    VisualizationSystem.clearPathLine();
+    VisualizationSystem.clearHighlights();
+}
+
+function handleMinimapClick(event) {
+    // ... existing code ...
+    VisualizationSystem.clearPathLine();
+    VisualizationSystem.clearHighlights();
+}
+
+function handleKeyPress(event) {
+    // ... existing code ...
+    if (event.key === 'Enter') {
+        if (UnitSystem.handleMovement(selectedUnit, hexGroup)) {
+            // ... existing code ...
+        }
+    }
+}
+
+function selectUnit(unit) {
+    UnitSystem.handleSelection(unit);
 }

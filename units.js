@@ -88,7 +88,8 @@ function createUnit(type, q, r, playerIndex) {
     // Set initial position using the new function
     const hex = findHex(q, r);
     if (hex) {
-        setUnitPosition(unitGroup, q, r, hex);
+        const coord = new HexCoord(q, r);
+        UnitSystem.setPosition(unitGroup, coord, hex);
     }
 
     return unitGroup;
