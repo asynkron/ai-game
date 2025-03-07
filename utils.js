@@ -80,8 +80,8 @@ for (let i = 0; i < 256; i++) {
     p[256 + i] = p[i] = permutation[i];
 }
 
-function noise(q, r) {
-    return (Math.sin(q * 12.9898 + r * 78.233) * 43758.5453123) % 1;
+function noise(x, y) {
+    return perlinNoise(x, y);
 }
 
 function getHexIntersects(raycaster) {
@@ -128,5 +128,38 @@ function createHexGeometry(radius = HEX_RADIUS, height = 1) {
     geometry.rotateY(Math.PI / 2);
     return geometry;
 }
+
+// Camera controls
+function updateCamera() {
+    camera.position.x = cameraTarget.x;
+    camera.position.y = cameraTarget.y;
+    camera.position.z = cameraTarget.z;
+    camera.lookAt(scene.position);
+}
+
+function moveCamera(direction) {
+    const speed = 0.1;
+    switch (direction) {
+        case 'up':
+            cameraTarget.y += speed;
+            break;
+        case 'down':
+            cameraTarget.y -= speed;
+            break;
+        case 'left':
+            cameraTarget.x -= speed;
+            break;
+        case 'right':
+            cameraTarget.x += speed;
+            break;
+    }
+    updateCamera();
+}
+
+// Export functions
+window.noise = noise;
+window.updateCamera = updateCamera;
+window.moveCamera = moveCamera;
+window.getHexIntersects = getHexIntersects;
 
 console.log('utils.js loaded');

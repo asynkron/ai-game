@@ -1,6 +1,25 @@
 // TerrainSystem.js
 
 class TerrainSystem {
+    static terrainTypes = {
+        GRASS: { name: 'grass', moveCost: 1, color: 0x00ff00 },
+        FOREST: { name: 'forest', moveCost: 2, color: 0x006400 },
+        MOUNTAIN: { name: 'mountain', moveCost: 3, color: 0x808080 },
+        WATER: { name: 'water', moveCost: 4, color: 0x0000ff }
+    };
+
+    static getTerrainMoveCost(terrainType) {
+        return this.terrainTypes[terrainType]?.moveCost || 1;
+    }
+
+    static getTerrainColor(terrainType) {
+        return this.terrainTypes[terrainType]?.color || 0x00ff00;
+    }
+
+    static getTerrainName(terrainType) {
+        return this.terrainTypes[terrainType]?.name || 'grass';
+    }
+
     static isImpassable(hex) {
         return hex.userData.type === 'water' || hex.userData.type === 'mountain';
     }

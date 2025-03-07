@@ -1,0 +1,5 @@
+# AI Instructions
+
+* Always try to reuse existing functionality, don´t create new formulas for existing functionality.
+* When refactoring, make sure to update all calls to the refactored function.
+* Use constants where possible, do not hardcode values.
