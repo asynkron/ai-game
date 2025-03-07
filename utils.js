@@ -130,78 +130,13 @@ function getHexKey(q, r) {
     return `${q},${r}`;
 }
 
+// Legacy functions that now use the systems
 function isImpassableTerrain(hex) {
-    return hex.userData.type === 'water' || hex.userData.type === 'mountain';
+    return TerrainSystem.isImpassable(hex);
 }
 
 function getTerrainMoveCost(hex) {
-    return isImpassableTerrain(hex) ? Infinity : 1;
-}
-
-function getValidNeighbors(q, r, visited = new Set()) {
-    const neighbors = getHexNeighbors(q, r);
-    return neighbors.filter(neighbor => {
-        const key = getHexKey(neighbor.q, neighbor.r);
-        if (visited.has(key)) return false;
-        if (!isWithinMapBounds(neighbor.q, neighbor.r)) return false;
-        const hex = findHex(neighbor.q, neighbor.r);
-        return hex !== undefined;
-    }).map(neighbor => ({
-        ...neighbor,
-        hex: findHex(neighbor.q, neighbor.r)
-    }));
-}
-
-// Hex coordinate class for consistent coordinate handling
-class HexCoord {
-    constructor(q, r) {
-        this.q = q;
-        this.r = r;
-    }
-
-    static fromKey(key) {
-        const [q, r] = key.split(',').map(Number);
-        return new HexCoord(q, r);
-    }
-
-    getKey() {
-        return getHexKey(this.q, this.r);
-    }
-
-    getHex() {
-        return findHex(this.q, this.r);
-    }
-
-    isValid() {
-        return isWithinMapBounds(this.q, this.r);
-    }
-
-    getNeighbors() {
-        return getHexNeighbors(this.q, this.r).map(n => new HexCoord(n.q, n.r));
-    }
-
-    getValidNeighbors(visited = new Set()) {
-        return this.getNeighbors()
-            .filter(n => n.isValid() && !visited.has(n.getKey()))
-            .map(n => ({
-                coord: n,
-                hex: n.getHex()
-            }))
-            .filter(n => n.hex !== undefined);
-    }
-
-    distanceTo(other) {
-        return getDistance(this.q, this.r, other.q, other.r);
-    }
-
-    getWorldPosition(height = 0) {
-        const pos = getHexPosition(this.q, this.r);
-        return new THREE.Vector3(pos.x, height, pos.z);
-    }
-
-    isOccupied(excludeUnit = null) {
-        return isHexOccupied(this.q, this.r, excludeUnit);
-    }
+    return TerrainSystem.getMoveCost(hex);
 }
 
 // Update dijkstra to use HexCoord
@@ -311,47 +246,43 @@ function highlightMoveRange(unit) {
     });
 }
 
+// Legacy functions that now use the systems
 function setUnitPosition(unit, q, r, hex) {
     const coord = new HexCoord(q, r);
-    const pos = coord.getWorldPosition(hex.userData.height + 0.1);
-    unit.position.copy(pos);
-    unit.userData.q = q;
-    unit.userData.r = r;
-
-    const miniPos = coord.getWorldPosition(0.5);
-    unit.userData.miniUnit.position.copy(miniPos);
+    UnitSystem.setPosition(unit, coord, hex);
 }
 
 function moveUnit(unit, path) {
-    let delay = 0;
-    path.forEach((hex) => {
-        setTimeout(() => {
-            setUnitPosition(unit, hex.userData.q, hex.userData.r, hex);
-        }, delay);
-        delay += 200;
-    });
+    UnitSystem.move(unit, path);
+}
+
+function handleUnitSelection(unit) {
+    UnitSystem.handleSelection(unit);
+}
+
+function handleUnitMovement(unit, targetHex) {
+    return UnitSystem.handleMovement(unit, targetHex);
+}
+
+function isValidMove(unit, targetHex) {
+    return UnitSystem.isValidMove(unit, targetHex);
+}
+
+// Legacy functions that now use the visualization system
+function clearPathLine() {
+    VisualizationSystem.clearPathLine();
+}
+
+function clearHighlights() {
+    VisualizationSystem.clearHighlights();
+}
+
+function highlightHex(hex) {
+    VisualizationSystem.highlightHex(hex);
 }
 
 function drawPath(unit, path) {
-    if (pathLine) {
-        group.remove(pathLine);
-    }
-    const points = [];
-    const pathHeight = 0.3;
-
-    const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
-    points.push(unitCoord.getWorldPosition(pathHeight));
-
-    path.forEach(hex => {
-        const coord = new HexCoord(hex.userData.q, hex.userData.r);
-        points.push(coord.getWorldPosition(pathHeight));
-    });
-
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const material = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 10 });
-    pathLine = new THREE.Line(geometry, material);
-    pathLine.computeLineDistances();
-    group.add(pathLine);
+    VisualizationSystem.drawPath(unit, path);
 }
 
 function getHexIntersects(raycaster) {
@@ -405,75 +336,6 @@ function createHexGeometry(radius = HEX_RADIUS, height = 1) {
     const geometry = new THREE.CylinderGeometry(radius, radius, height, 6);
     geometry.rotateY(Math.PI / 2);
     return geometry;
-}
-
-function clearPathLine() {
-    if (pathLine) {
-        group.remove(pathLine);
-        pathLine = null;
-    }
-}
-
-function clearHighlights() {
-    const highlights = group.getObjectByName("highlights");
-    if (highlights) {
-        group.remove(highlights);
-    }
-}
-
-function isValidMove(unit, targetHex) {
-    if (!targetHex || targetHex.userData.moveCost === Infinity) return false;
-
-    const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
-    const targetCoord = new HexCoord(targetHex.userData.q, targetHex.userData.r);
-    const { reachable } = dijkstra(unitCoord.q, unitCoord.r, unit.userData.move);
-
-    return reachable.has(targetCoord.getKey());
-}
-
-function handleUnitSelection(unit) {
-    selectedUnit = unit;
-    clearPathLine();
-    highlightMoveRange(unit);
-}
-
-function handleUnitMovement(unit, targetHex) {
-    const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
-    const targetCoord = new HexCoord(targetHex.userData.q, targetHex.userData.r);
-    const path = getPath(unitCoord.q, unitCoord.r, targetCoord.q, targetCoord.r, unit.userData.move);
-
-    if (path.length > 0) {
-        unit.userData.move -= unitCoord.distanceTo(targetCoord);
-        moveUnit(unit, path);
-        clearPathLine();
-        selectedUnit = null;
-        clearHighlights();
-        return true;
-    }
-    return false;
-}
-
-function highlightHex(hex) {
-    const highlights = group.getObjectByName("highlights") || new THREE.Group();
-    highlights.name = "highlights";
-
-    const shape = createHexShape();
-    const geometry = new THREE.ShapeGeometry(shape);
-    const material = new THREE.MeshBasicMaterial({
-        color: HIGHLIGHT_COLORS.MOVE_RANGE,
-        transparent: true,
-        opacity: 0.5,
-        side: THREE.DoubleSide
-    });
-
-    const highlight = new THREE.Mesh(geometry, material);
-    const coord = new HexCoord(hex.userData.q, hex.userData.r);
-    const pos = coord.getWorldPosition(hex.userData.height + 0.01);
-    highlight.position.copy(pos);
-    highlight.rotation.x = -Math.PI / 2;
-    highlights.add(highlight);
-
-    group.add(highlights);
 }
 
 // Update getHexesInRange to use HexCoord

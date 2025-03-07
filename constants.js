@@ -44,6 +44,24 @@ const HIGHLIGHT_COLORS = {
     MOVE_RANGE: 0xffff00     // Yellow for move range
 };
 
+// Visual effect colors
+const VISUAL_COLORS = {
+    PATH: 0xff0000,          // Red for path lines
+    HEX_BORDER: 0x000000,    // Black for hex borders
+    FOG: 0x87CEEB,          // Sky blue for fog
+    BACKGROUND_LIGHT: 0xf0f0f0,  // Light gray for background
+    BACKGROUND_DARK: 0x333333    // Dark gray for background
+};
+
+// Terrain height modifiers
+const TERRAIN_HEIGHT = {
+    MOUNTAIN_MODIFIER: 1.5,
+    FOREST_MODIFIER: 0.3,
+    UNIT_OFFSET: 0.1,        // Height offset for units above terrain
+    PATH_HEIGHT: 0.3,        // Height for path visualization
+    HIGHLIGHT_OFFSET: 0.01   // Height offset for hex highlights
+};
+
 // Function to get terrain type from color
 function getTerrainTypeFromColor(color) {
     switch (color) {
