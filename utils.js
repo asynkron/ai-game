@@ -84,98 +84,6 @@ function noise(q, r) {
     return (Math.sin(q * 12.9898 + r * 78.233) * 43758.5453123) % 1;
 }
 
-// Update dijkstra to use HexCoord and call TerrainSystem directly
-function dijkstra(startQ, startR, maxCost = Infinity) {
-    const distances = new Map();
-    const previous = new Map();
-    const unvisited = new Set();
-    const visited = new Set();
-    const reachable = new Set();
-
-    // Initialize distances
-    hexGrid.forEach(hex => {
-        const coord = new HexCoord(hex.userData.q, hex.userData.r);
-        const key = coord.getKey();
-        distances.set(key, Infinity);
-        unvisited.add(key);
-    });
-
-    const startCoord = new HexCoord(startQ, startR);
-    const startKey = startCoord.getKey();
-    distances.set(startKey, 0);
-    reachable.add(startKey);
-
-    while (unvisited.size > 0) {
-        let currentKey = null;
-        let minDistance = Infinity;
-        unvisited.forEach(key => {
-            if (distances.get(key) < minDistance) {
-                minDistance = distances.get(key);
-                currentKey = key;
-            }
-        });
-
-        if (minDistance > maxCost) break;
-
-        unvisited.delete(currentKey);
-        visited.add(currentKey);
-
-        const currentCoord = HexCoord.fromKey(currentKey);
-        const currentHex = currentCoord.getHex();
-        if (!currentHex) continue;
-
-        const validNeighbors = currentCoord.getValidNeighbors(visited);
-
-        validNeighbors.forEach(({ coord, hex }) => {
-            if (coord.isOccupied()) return;
-
-            const neighborKey = coord.getKey();
-            const cost = TerrainSystem.getMoveCost(hex);
-            if (cost === Infinity) return;
-
-            const newDistance = distances.get(currentKey) + cost;
-
-            if (newDistance < distances.get(neighborKey)) {
-                distances.set(neighborKey, newDistance);
-                previous.set(neighborKey, currentKey);
-                if (newDistance <= maxCost) {
-                    reachable.add(neighborKey);
-                }
-            }
-        });
-    }
-
-    return { distances, previous, reachable };
-}
-
-function getPath(q1, r1, q2, r2, move) {
-    const startCoord = new HexCoord(q1, r1);
-    const endCoord = new HexCoord(q2, r2);
-    const { previous, reachable } = dijkstra(startCoord.q, startCoord.r, move);
-    const path = [];
-    let currentKey = endCoord.getKey();
-
-    if (!reachable.has(currentKey)) {
-        return [];
-    }
-
-    while (previous.has(currentKey)) {
-        const coord = HexCoord.fromKey(currentKey);
-        const hex = coord.getHex();
-        if (hex) {
-            path.unshift(hex);
-        }
-        currentKey = previous.get(currentKey);
-    }
-
-    const startHex = startCoord.getHex();
-    if (startHex) {
-        path.unshift(startHex);
-    }
-
-    return path.slice(1);
-}
-
 function getHexIntersects(raycaster) {
     const intersectObjects = [];
     hexGrid.forEach(hexGroup => {
@@ -227,35 +135,6 @@ function createHexGeometry(radius = HEX_RADIUS, height = 1) {
     const geometry = new THREE.CylinderGeometry(radius, radius, height, 6);
     geometry.rotateY(Math.PI / 2);
     return geometry;
-}
-
-// Update getHexesInRange to use HexCoord
-function getHexesInRange(q, r, range) {
-    const hexes = [];
-    const visited = new Set();
-    const startCoord = new HexCoord(q, r);
-    const queue = [{ coord: startCoord, distance: 0 }];
-    visited.add(startCoord.getKey());
-
-    while (queue.length > 0) {
-        const current = queue.shift();
-        if (current.distance >= range) continue;
-
-        const validNeighbors = current.coord.getValidNeighbors(visited);
-
-        validNeighbors.forEach(({ coord, hex }) => {
-            if (TerrainSystem.getMoveCost(hex) !== Infinity) {
-                hexes.push(hex);
-                visited.add(coord.getKey());
-                queue.push({
-                    coord,
-                    distance: current.distance + 1
-                });
-            }
-        });
-    }
-
-    return hexes;
 }
 
 console.log('utils.js loaded');

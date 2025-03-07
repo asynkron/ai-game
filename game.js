@@ -95,7 +95,7 @@ function setupEventListeners(matrices) {
             if (intersects.length > 0) {
                 const hexGroup = intersects[0].object.parent;
                 if (UnitSystem.isValidMove(selectedUnit, hexGroup)) {
-                    const path = getPath(selectedUnit.userData.q, selectedUnit.userData.r, hexGroup.userData.q, hexGroup.userData.r, selectedUnit.userData.move);
+                    const path = PathfindingSystem.getPath(selectedUnit.userData.q, selectedUnit.userData.r, hexGroup.userData.q, hexGroup.userData.r, selectedUnit.userData.move);
                     if (path.length > 0) {
                         VisualizationSystem.drawPath(selectedUnit, path);
                     }

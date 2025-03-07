@@ -35,7 +35,7 @@ class UnitSystem {
     static handleMovement(unit, targetHex) {
         const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
         const targetCoord = new HexCoord(targetHex.userData.q, targetHex.userData.r);
-        const path = getPath(unitCoord.q, unitCoord.r, targetCoord.q, targetCoord.r, unit.userData.move);
+        const path = PathfindingSystem.getPath(unitCoord.q, unitCoord.r, targetCoord.q, targetCoord.r, unit.userData.move);
 
         if (path.length > 0) {
             unit.userData.move -= unitCoord.distanceTo(targetCoord);
@@ -51,7 +51,7 @@ class UnitSystem {
     static highlightMoveRange(unit) {
         VisualizationSystem.clearHighlights();
         const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
-        const { reachable } = dijkstra(unitCoord.q, unitCoord.r, unit.userData.move);
+        const { reachable } = PathfindingSystem.dijkstra(unitCoord.q, unitCoord.r, unit.userData.move);
 
         reachable.forEach(key => {
             const coord = HexCoord.fromKey(key);
@@ -67,7 +67,7 @@ class UnitSystem {
 
         const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
         const targetCoord = new HexCoord(targetHex.userData.q, targetHex.userData.r);
-        const { reachable } = dijkstra(unitCoord.q, unitCoord.r, unit.userData.move);
+        const { reachable } = PathfindingSystem.dijkstra(unitCoord.q, unitCoord.r, unit.userData.move);
 
         return reachable.has(targetCoord.getKey());
     }
