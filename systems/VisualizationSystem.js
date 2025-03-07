@@ -19,7 +19,7 @@ class VisualizationSystem {
         const highlights = group.getObjectByName("highlights") || new THREE.Group();
         highlights.name = "highlights";
 
-        const shape = createHexShape();
+        const shape = GridSystem.createHexShape();
         const geometry = new THREE.ShapeGeometry(shape);
         const material = new THREE.MeshBasicMaterial({
             color: HIGHLIGHT_COLORS.MOVE_RANGE,

@@ -108,27 +108,6 @@ function updateCameraLookAt(camera, worldPos, matrices) {
     camera.lookAt(worldPos.clone().add(worldLookDirection.multiplyScalar(10)));
 }
 
-function createHexShape(radius = HEX_RADIUS) {
-    const shape = new THREE.Shape();
-    for (let i = 0; i < 6; i++) {
-        const angle = (i * Math.PI) / 3;
-        const x = radius * Math.cos(angle);
-        const y = radius * Math.sin(angle);
-        if (i === 0) {
-            shape.moveTo(x, y);
-        } else {
-            shape.lineTo(x, y);
-        }
-    }
-    return shape;
-}
-
-function createHexGeometry(radius = HEX_RADIUS, height = 1) {
-    const geometry = new THREE.CylinderGeometry(radius, radius, height, 6);
-    geometry.rotateY(Math.PI / 2);
-    return geometry;
-}
-
 // Camera controls
 function updateCamera() {
     camera.position.x = cameraTarget.x;
