@@ -190,12 +190,12 @@ function cpuTurn() {
 function initGame() {
     console.log('initGame called');
     initRenderer();
-    const { mapCenterX, mapCenterZ } = createMap();
-    initUnits();
+    const { mapCenterX, mapCenterZ } = GridSystem.createMap();
     const matrices = setupCamera(mapCenterX, mapCenterZ);
-    const minimap = setupMinimap(mapCenterX, mapCenterZ);
+    const { miniMapCamera, mapWidth, mapHeight, highlightGroup } = setupMinimap(mapCenterX, mapCenterZ);
+    initUnits();
     setupEventListeners(matrices);
-    animate(minimap.miniMapCamera, matrices, minimap.mapWidth, minimap.mapHeight, minimap.highlightGroup);
+    animate(miniMapCamera, matrices, mapWidth, mapHeight, highlightGroup);
 }
 
 console.log('game.js loaded, initGame defined');
