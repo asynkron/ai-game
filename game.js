@@ -176,7 +176,7 @@ function setupEventListeners(matrices) {
 
 function nextTurn() {
     currentTurn = (currentTurn + 1) % players.length;
-    players[currentTurn].units.forEach(u => u.userData.move = unitTypes[u.userData.type].move);
+    players[currentTurn].units.forEach(u => u.userData.move = UnitSystem.unitTypes[u.userData.type].move);
     if (currentTurn !== 0) cpuTurn();
     selectedUnit = null;
     VisualizationSystem.clearPathLine();
