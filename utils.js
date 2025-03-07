@@ -84,52 +84,6 @@ function noise(q, r) {
     return (Math.sin(q * 12.9898 + r * 78.233) * 43758.5453123) % 1;
 }
 
-function getHexPosition(q, r) {
-    const x = HEX_RADIUS * 1.5 * q;
-    const z = HEX_RADIUS * Math.sqrt(3) * (r + (q % 2) / 2);
-    return { x, z };
-}
-
-function getWorldPosition(q, r, height = 0) {
-    const pos = getHexPosition(q, r);
-    return new THREE.Vector3(pos.x, height, pos.z);
-}
-
-function getDistance(q1, r1, q2, r2) {
-    return Math.max(Math.abs(q1 - q2), Math.abs(r1 - r2), Math.abs((q1 + r1) - (q2 + r2)));
-}
-
-function getHexNeighbors(q, r) {
-    const isOddColumn = q % 2 === 1;
-    return [
-        // NW
-        { q: q - 1, r: r - (isOddColumn ? 0 : 1) },
-        // N
-        { q: q, r: r - 1 },
-        // NE
-        { q: q + 1, r: r - (isOddColumn ? 0 : 1) },
-        // SE
-        { q: q + 1, r: r + 1 - (isOddColumn ? 0 : 1) },
-        // S
-        { q: q, r: r + 1 },
-        // SW
-        { q: q - 1, r: r + 1 - (isOddColumn ? 0 : 1) }
-    ];
-}
-
-// Utility functions for hex grid operations
-function isWithinMapBounds(q, r) {
-    return q >= 0 && q < MAP_COLS && r >= 0 && r < MAP_ROWS;
-}
-
-function findHex(q, r) {
-    return hexGrid.find(h => h.userData.q === q && h.userData.r === r);
-}
-
-function getHexKey(q, r) {
-    return `${q},${r}`;
-}
-
 // Update dijkstra to use HexCoord and call TerrainSystem directly
 function dijkstra(startQ, startR, maxCost = Infinity) {
     const distances = new Map();

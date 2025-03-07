@@ -74,7 +74,8 @@ function setupEventListeners(matrices) {
         if (intersects.length > 0) {
             const intersectedMesh = intersects[0].object;
             const hexGroup = intersectedMesh.parent;
-            const worldPos = getWorldPosition(hexGroup.userData.q, hexGroup.userData.r, hexGroup.userData.height + 0.01);
+            const coord = new HexCoord(hexGroup.userData.q, hexGroup.userData.r);
+            const worldPos = coord.getWorldPosition(hexGroup.userData.height + 0.01);
             highlightOutline.position.copy(worldPos);
             highlightOutline.visible = true;
 
