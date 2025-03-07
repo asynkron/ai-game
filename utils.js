@@ -222,21 +222,6 @@ function getPath(q1, r1, q2, r2, move) {
     return path.slice(1);
 }
 
-function highlightMoveRange(unit) {
-    clearHighlights();
-
-    const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
-    const { reachable } = dijkstra(unitCoord.q, unitCoord.r, unit.userData.move);
-
-    reachable.forEach(key => {
-        const coord = HexCoord.fromKey(key);
-        const hex = coord.getHex();
-        if (hex && !coord.isOccupied(unit)) {
-            highlightHex(hex);
-        }
-    });
-}
-
 function getHexIntersects(raycaster) {
     const intersectObjects = [];
     hexGrid.forEach(hexGroup => {
