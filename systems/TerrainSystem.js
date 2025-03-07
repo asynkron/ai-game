@@ -39,21 +39,6 @@ class TerrainSystem {
                 return baseHeight;
         }
     }
-
-    static getColor(type) {
-        switch (type) {
-            case 'water':
-                return TERRAIN_COLORS.WATER;
-            case 'grass':
-                return TERRAIN_COLORS.GRASS;
-            case 'forest':
-                return TERRAIN_COLORS.FOREST;
-            case 'mountain':
-                return TERRAIN_COLORS.MOUNTAIN;
-            default:
-                return TERRAIN_COLORS.GRASS;
-        }
-    }
 }
 
 console.log('TerrainSystem.js loaded'); 
