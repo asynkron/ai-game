@@ -99,6 +99,24 @@ function getDistance(q1, r1, q2, r2) {
     return Math.max(Math.abs(q1 - q2), Math.abs(r1 - r2), Math.abs((q1 + r1) - (q2 + r2)));
 }
 
+function getHexNeighbors(q, r) {
+    const isOddColumn = q % 2 === 1;
+    return [
+        // NW
+        { q: q - 1, r: r - (isOddColumn ? 0 : 1) },
+        // N
+        { q: q, r: r - 1 },
+        // NE
+        { q: q + 1, r: r - (isOddColumn ? 0 : 1) },
+        // SE
+        { q: q + 1, r: r + 1 - (isOddColumn ? 0 : 1) },
+        // S
+        { q: q, r: r + 1 },
+        // SW
+        { q: q - 1, r: r + 1 - (isOddColumn ? 0 : 1) }
+    ];
+}
+
 // Dijkstra's algorithm implementation
 function dijkstra(startQ, startR, maxCost = Infinity) {
     const distances = new Map();
@@ -142,22 +160,8 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
         const currentHex = hexGrid.find(h => h.userData.q === currentQ && h.userData.r === currentR);
         if (!currentHex) continue;
 
-        // Calculate neighbors using even/odd column logic
-        const isOddColumn = currentQ % 2 === 1;
-        const neighbors = [
-            // NW
-            { q: currentQ - 1, r: currentR - (isOddColumn ? 0 : 1) },
-            // N
-            { q: currentQ, r: currentR - 1 },
-            // NE
-            { q: currentQ + 1, r: currentR - (isOddColumn ? 0 : 1) },
-            // SE
-            { q: currentQ + 1, r: currentR + 1 - (isOddColumn ? 0 : 1) },
-            // S
-            { q: currentQ, r: currentR + 1 },
-            // SW
-            { q: currentQ - 1, r: currentR + 1 - (isOddColumn ? 0 : 1) }
-        ];
+        // Get neighbors using the new function
+        const neighbors = getHexNeighbors(currentQ, currentR);
 
         // Process each neighbor
         neighbors.forEach(neighbor => {
@@ -422,23 +426,8 @@ function getHexesInRange(q, r, range) {
         const current = queue.shift();
         if (current.distance >= range) continue;
 
-        const isOddColumn = current.q % 2 === 1;
-
-        // Get all six neighbors using the correct even/odd column offsets
-        const neighbors = [
-            // NW
-            { q: current.q - 1, r: current.r - (isOddColumn ? 0 : 1) },
-            // N
-            { q: current.q, r: current.r - 1 },
-            // NE
-            { q: current.q + 1, r: current.r - (isOddColumn ? 0 : 1) },
-            // SE
-            { q: current.q + 1, r: current.r + 1 - (isOddColumn ? 0 : 1) },
-            // S
-            { q: current.q, r: current.r + 1 },
-            // SW
-            { q: current.q - 1, r: current.r + 1 - (isOddColumn ? 0 : 1) }
-        ];
+        // Get neighbors using the new function
+        const neighbors = getHexNeighbors(current.q, current.r);
 
         // Process each neighbor
         neighbors.forEach(neighbor => {
