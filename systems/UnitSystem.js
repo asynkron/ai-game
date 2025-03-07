@@ -1,6 +1,10 @@
 // UnitSystem.js
 
 class UnitSystem {
+    static isHexOccupied(q, r, excludeUnit = null) {
+        return allUnits.some(u => u.userData.q === q && u.userData.r === r && u !== excludeUnit);
+    }
+
     static setPosition(unit, coord, hex) {
         const pos = coord.getWorldPosition(TerrainSystem.getHeight(hex) + TERRAIN_HEIGHT.UNIT_OFFSET);
         unit.position.copy(pos);

@@ -83,7 +83,7 @@ class HexCoord {
     }
 
     isOccupied(excludeUnit = null) {
-        return isHexOccupied(this.q, this.r, excludeUnit);
+        return UnitSystem.isHexOccupied(this.q, this.r, excludeUnit);
     }
 }
 

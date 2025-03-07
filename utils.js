@@ -127,7 +127,7 @@ function dijkstra(startQ, startR, maxCost = Infinity) {
         const validNeighbors = currentCoord.getValidNeighbors(visited);
 
         validNeighbors.forEach(({ coord, hex }) => {
-            if (isHexOccupied(coord.q, coord.r)) return;
+            if (coord.isOccupied()) return;
 
             const neighborKey = coord.getKey();
             const cost = TerrainSystem.getMoveCost(hex);
