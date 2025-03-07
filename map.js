@@ -31,30 +31,31 @@ function createMap() {
             let type, color, moveCost, height;
 
             if (n < WATER_THRESHOLD) {
-                type = "water";
-                color = TERRAIN_COLORS.WATER;
-                moveCost = Infinity;
+                type = "WATER";
+                color = TerrainSystem.getTerrainColor(type);
+                moveCost = TerrainSystem.getTerrainMoveCost(type);
                 height = WATER_BASE_HEIGHT + Math.random() * WATER_HEIGHT_VARIATION;
             } else if (n < GRASS_THRESHOLD) {
-                type = "grass";
-                color = TERRAIN_COLORS.GRASS;
-                moveCost = 1;
+                type = "GRASS";
+                color = TerrainSystem.getTerrainColor(type);
+                moveCost = TerrainSystem.getTerrainMoveCost(type);
                 height = GRASS_BASE_HEIGHT + Math.random() * GRASS_HEIGHT_VARIATION;
             } else if (n < FOREST_THRESHOLD) {
-                type = "forest";
-                color = TERRAIN_COLORS.FOREST;
-                moveCost = 1;
+                type = "FOREST";
+                color = TerrainSystem.getTerrainColor(type);
+                moveCost = TerrainSystem.getTerrainMoveCost(type);
                 height = FOREST_BASE_HEIGHT + Math.random() * FOREST_HEIGHT_VARIATION;
             } else {
-                type = "mountain";
-                color = TERRAIN_COLORS.MOUNTAIN;
-                moveCost = 2;
+                type = "MOUNTAIN";
+                color = TerrainSystem.getTerrainColor(type);
+                moveCost = TerrainSystem.getTerrainMoveCost(type);
                 height = MOUNTAIN_BASE_HEIGHT + Math.random() * MOUNTAIN_HEIGHT_VARIATION;
             }
 
             const hex = createHexPrism(color, x, z, height);
             hex.userData.q = q;  // Store the actual grid coordinates
             hex.userData.r = r;
+            hex.userData.type = type.toLowerCase();
             group.add(hex);
             addHex(hex);
 
@@ -127,24 +128,20 @@ function createMiniHex(color, x, z) {
 }
 
 function getTerrainColor(noiseValue) {
-    let color;
     if (noiseValue < WATER_THRESHOLD) {
-        color = TERRAIN_COLORS.WATER;
+        return TerrainSystem.getTerrainColor("WATER");
     } else if (noiseValue < GRASS_THRESHOLD) {
-        color = TERRAIN_COLORS.GRASS;
+        return TerrainSystem.getTerrainColor("GRASS");
     } else if (noiseValue < FOREST_THRESHOLD) {
-        color = TERRAIN_COLORS.FOREST;
+        return TerrainSystem.getTerrainColor("FOREST");
     } else {
-        color = TERRAIN_COLORS.MOUNTAIN;
+        return TerrainSystem.getTerrainColor("MOUNTAIN");
     }
-    return color;
 }
 
 function isValidMove(unit, targetQ) {
     if (!targetQ || !targetQ.userData) return false;
-    const material = targetQ.children[0].material;
-    const moveCost = material.color.getHex() === TERRAIN_COLORS.WATER ? Infinity : // Water
-        material.color.getHex() === TERRAIN_COLORS.MOUNTAIN ? 2 : // Mountain
-            1; // Grass and Forest
+    const type = targetQ.userData.type.toUpperCase();
+    const moveCost = TerrainSystem.getTerrainMoveCost(type);
     return unit.userData.move >= moveCost;
 }

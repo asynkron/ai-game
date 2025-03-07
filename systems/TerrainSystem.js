@@ -2,10 +2,10 @@
 
 class TerrainSystem {
     static terrainTypes = {
-        GRASS: { name: 'grass', moveCost: 1, color: 0x00ff00 },
-        FOREST: { name: 'forest', moveCost: 2, color: 0x006400 },
-        MOUNTAIN: { name: 'mountain', moveCost: 3, color: 0x808080 },
-        WATER: { name: 'water', moveCost: 4, color: 0x0000ff }
+        GRASS: { name: 'grass', moveCost: 1, color: TERRAIN_COLORS.GRASS },
+        FOREST: { name: 'forest', moveCost: 2, color: TERRAIN_COLORS.FOREST },
+        MOUNTAIN: { name: 'mountain', moveCost: 3, color: TERRAIN_COLORS.MOUNTAIN },
+        WATER: { name: 'water', moveCost: 4, color: TERRAIN_COLORS.WATER }
     };
 
     static getTerrainMoveCost(terrainType) {
@@ -13,7 +13,7 @@ class TerrainSystem {
     }
 
     static getTerrainColor(terrainType) {
-        return this.terrainTypes[terrainType]?.color || 0x00ff00;
+        return this.terrainTypes[terrainType]?.color || TERRAIN_COLORS.GRASS;
     }
 
     static getTerrainName(terrainType) {
