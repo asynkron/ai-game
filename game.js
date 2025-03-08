@@ -133,9 +133,9 @@ function setupEventListeners(matrices) {
         const intersects = getHexIntersects(raycaster);
         if (intersects.length > 0) {
             const hexGroup = intersects[0].object.parent;
-            const unitOnHex = allUnits.find(u => u.userData.q === hexGroup.userData.q && u.userData.r === hexGroup.userData.r);
+            const unitOnHex = gameState.getUnitAt(hexGroup.userData.q, hexGroup.userData.r);
 
-            if (unitOnHex && currentTurn === 0 && players[0].units.includes(unitOnHex)) {
+            if (unitOnHex && currentTurn === 0 && gameState.players[0].units.includes(unitOnHex)) {
                 UnitSystem.handleSelection(unitOnHex);
                 return;
             } else if (selectedUnit && UnitSystem.isValidMove(selectedUnit, hexGroup)) {
@@ -190,10 +190,16 @@ function cpuTurn() {
 function initGame() {
     console.log('initGame called');
     initRenderer();
-    const { mapCenterX, mapCenterZ } = GridSystem.createMap();
+
+    // Create game state and map first
+    window.gameState = new GameState();
+    const { mapCenterX, mapCenterZ } = GridSystem.createMap(gameState);
     const matrices = setupCamera(mapCenterX, mapCenterZ);
     const { miniMapCamera, mapWidth, mapHeight, highlightGroup } = setupMinimap(mapCenterX, mapCenterZ);
-    initUnits();
+
+    // Now initialize units after map is created
+    gameState.initializeUnits();
+
     setupEventListeners(matrices);
     animate(miniMapCamera, matrices, mapWidth, mapHeight, highlightGroup);
 }

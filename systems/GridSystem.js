@@ -104,11 +104,9 @@ class GridSystem {
         return miniHex;
     }
 
-    static createMap() {
+    static createMap(gameState) {
         const mapCenterX = (MAP_COLS * HEX_RADIUS * 1.5) / 2;
         const mapCenterZ = (MAP_ROWS * HEX_RADIUS * Math.sqrt(3)) / 2;
-
-        const gameMap = new GameMap();
 
         for (let q = 0; q < MAP_COLS; q++) {
             for (let r = 0; r < MAP_ROWS; r++) {
@@ -116,7 +114,7 @@ class GridSystem {
                 const x = HEX_RADIUS * 1.5 * q;
                 const z = HEX_RADIUS * Math.sqrt(3) * (r + (q % 2) / 2);
 
-                const tile = gameMap.getTile(q, r);
+                const tile = gameState.map.getTile(q, r);
                 if (tile) {
                     const type = tile.type;
                     const color = tile.color;

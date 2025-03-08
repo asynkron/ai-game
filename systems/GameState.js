@@ -11,31 +11,21 @@ class Player {
     addUnit(unit) {
         this.units.push(unit);
     }
-
-    removeUnit(unit) {
-        const index = this.units.indexOf(unit);
-        if (index > -1) {
-            this.units.splice(index, 1);
-        }
-    }
 }
 
 class GameState {
     constructor() {
         this.map = new GameMap();
         this.players = [];
-        this.currentTurn = 0;
-        this.selectedUnit = null;
-        this.initialize();
-    }
 
-    initialize() {
         // Create players to match existing setup
         this.players.push(new Player(0, "human", 0x0000ff));  // Blue for player
         this.players.push(new Player(1, "cpu1", 0xff0000));   // Red for AI
+    }
 
-        // Initialize starting units for each player
-        this.initializeUnits();
+    getUnitAt(q, r) {
+        return this.players.flatMap(p => p.units)
+            .find(unit => unit.userData.q === q && unit.userData.r === r);
     }
 
     initializeUnits() {
@@ -76,71 +66,6 @@ class GameState {
                 this.players[1].addUnit(unit);
             }
         });
-    }
-
-    getCurrentPlayer() {
-        return this.players[this.currentTurn];
-    }
-
-    nextTurn() {
-        // Reset move points for current player's units
-        this.getCurrentPlayer().units.forEach(unit => {
-            unit.userData.move = UnitSystem.unitTypes[unit.userData.type].move;
-        });
-
-        // Advance turn
-        this.currentTurn = (this.currentTurn + 1) % this.players.length;
-
-        // Clear selection
-        this.selectedUnit = null;
-    }
-
-    selectUnit(unit) {
-        if (unit && unit.userData.playerIndex === this.currentTurn) {
-            this.selectedUnit = unit;
-            return true;
-        }
-        return false;
-    }
-
-    moveUnit(unit, targetQ, targetR) {
-        if (!unit || unit.userData.playerIndex !== this.currentTurn) {
-            return false;
-        }
-
-        const tile = this.map.getTile(targetQ, targetR);
-        if (!tile || tile.moveCost === Infinity) {
-            return false;
-        }
-
-        // Check if target hex is occupied
-        const targetHex = GridSystem.findHex(targetQ, targetR);
-        const existingUnit = this.players.flatMap(p => p.units)
-            .find(u => u.userData.q === targetQ && u.userData.r === targetR);
-
-        if (existingUnit) {
-            return false;
-        }
-
-        // Update unit position
-        unit.userData.q = targetQ;
-        unit.userData.r = targetR;
-        const pos = HexCoord.getHexPosition(targetQ, targetR);
-        unit.position.set(pos.x, tile.height, pos.z);
-
-        return true;
-    }
-
-    getUnitAt(q, r) {
-        return this.players.flatMap(p => p.units)
-            .find(unit => unit.userData.q === q && unit.userData.r === r);
-    }
-
-    removeUnit(unit) {
-        const player = this.players[unit.userData.playerIndex];
-        if (player) {
-            player.removeUnit(unit);
-        }
     }
 }
 
