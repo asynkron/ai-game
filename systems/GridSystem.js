@@ -52,7 +52,7 @@ class GridSystem {
         return this.hexGrid.find(h => h.userData.q === q && h.userData.r === r);
     }
 
-    static createHexPrism(color, x, z, height) {
+    static createHexPrism(color, x, z, height, moveCost) {
         const geometry = this.createHexGeometry(HEX_RADIUS, height);
         const material = new THREE.MeshStandardMaterial({
             color,
@@ -88,9 +88,7 @@ class GridSystem {
             x: x,
             z: z,
             height: height,
-            moveCost: material.color.getHex() === TERRAIN_COLORS.WATER ? Infinity : // Water
-                material.color.getHex() === TERRAIN_COLORS.MOUNTAIN ? 2 : // Mountain
-                    1 // Grass and Forest
+            moveCost: moveCost
         };
 
         return hexGroup;
@@ -121,7 +119,7 @@ class GridSystem {
                     const height = tile.height;
                     const moveCost = tile.moveCost;
 
-                    const hex = this.createHexPrism(color, x, z, height);
+                    const hex = this.createHexPrism(color, x, z, height, moveCost);
                     hex.userData.q = q;  // Store the actual grid coordinates
                     hex.userData.r = r;
                     hex.userData.type = type.toLowerCase();
