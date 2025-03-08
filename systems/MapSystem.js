@@ -9,7 +9,7 @@ class Tile {
     }
 }
 
-class Map {
+class GameMap {
     constructor(rows = MAP_ROWS, cols = MAP_COLS) {
         this.rows = rows;
         this.cols = cols;
