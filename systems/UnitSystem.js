@@ -104,7 +104,7 @@ class UnitSystem {
 
         // Transform position in world space
         const localToWorldMatrix = new THREE.Matrix4().makeRotationX(MAP_TILT_ANGLE);
-        const position = new THREE.Vector3(worldPos.x, height + TERRAIN_HEIGHT.UNIT_OFFSET, worldPos.z);
+        const position = new THREE.Vector3(worldPos.x, height + VISUAL_OFFSETS.UNIT_OFFSET, worldPos.z);
         position.applyMatrix4(localToWorldMatrix);
 
         unit.position.copy(position);

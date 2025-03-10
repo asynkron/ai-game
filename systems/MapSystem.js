@@ -14,40 +14,30 @@ class GameMap {
         this.rows = rows;
         this.cols = cols;
         this.tiles = [];
+        // Initialize the 2D array
+        for (let r = 0; r < rows; r++) {
+            this.tiles[r] = [];
+        }
         this.generateMap();
     }
 
     generateMap() {
-        // Initialize the tiles array
-        for (let r = 0; r < this.rows; r++) {
-            this.tiles[r] = [];
-            for (let q = 0; q < this.cols; q++) {
-                // Generate perlin noise value
-                const n = ((perlinNoise(q / PERLIN_SCALE, r / PERLIN_SCALE) + 1) / 2) + (Math.random() - 0.5) * 0.1;
-                let height, type, moveCost;
+        for (let q = 0; q < MAP_COLS; q++) {
+            for (let r = 0; r < MAP_ROWS; r++) {
+                // Normalize noise value from [-1,1] to [0,1]
+                const rawNoise = perlinNoise(q / PERLIN_SCALE, r / PERLIN_SCALE);
+                const noiseValue = (rawNoise + 1) / 2;
 
-                // Determine tile type based on noise value
-                if (n < WATER_THRESHOLD) {
-                    height = WATER_BASE_HEIGHT + Math.random() * WATER_HEIGHT_VARIATION;
-                    type = "WATER";
-                    moveCost = Infinity; // Water is impassable
-                } else if (n < GRASS_THRESHOLD) {
-                    height = GRASS_BASE_HEIGHT + Math.random() * GRASS_HEIGHT_VARIATION;
-                    type = "GRASS";
-                    moveCost = 1;
-                } else if (n < FOREST_THRESHOLD) {
-                    height = FOREST_BASE_HEIGHT + Math.random() * FOREST_HEIGHT_VARIATION;
-                    type = "FOREST";
-                    moveCost = 2;
-                } else {
-                    height = MOUNTAIN_BASE_HEIGHT + Math.random() * MOUNTAIN_HEIGHT_VARIATION;
-                    type = "MOUNTAIN";
-                    moveCost = Infinity; // Mountains are impassable
-                }
+                const terrainType = TerrainSystem.getTerrainTypeFromNoise(noiseValue);
 
-                const color = TerrainSystem.getTerrainColor(type);
-                console.log('TerrainSystem color for', type, ':', color, 'typeof:', typeof color);
-                this.tiles[r][q] = new Tile(height, type, color, moveCost);
+                const baseHeight = TerrainSystem.getTerrainBaseHeight(terrainType);
+                const heightVariation = TerrainSystem.getTerrainHeightVariation(terrainType);
+                const height = baseHeight + Math.random() * heightVariation;
+
+                const color = TerrainSystem.getTerrainColor(terrainType);
+                const moveCost = TerrainSystem.getTerrainMoveCost(terrainType);
+
+                this.tiles[r][q] = new Tile(height, terrainType, color, moveCost);
             }
         }
     }

@@ -30,7 +30,7 @@ class VisualizationSystem {
 
         const highlight = new THREE.Mesh(geometry, material);
         const coord = new HexCoord(hex.userData.q, hex.userData.r);
-        const pos = coord.getWorldPosition(hex.userData.height + TERRAIN_HEIGHT.HIGHLIGHT_OFFSET);
+        const pos = coord.getWorldPosition(hex.userData.height + VISUAL_OFFSETS.HIGHLIGHT_OFFSET);
         highlight.position.copy(pos);
         highlight.rotation.x = -Math.PI / 2;
         highlights.add(highlight);
@@ -43,11 +43,11 @@ class VisualizationSystem {
         const points = [];
 
         const unitCoord = new HexCoord(unit.userData.q, unit.userData.r);
-        points.push(unitCoord.getWorldPosition(TERRAIN_HEIGHT.PATH_HEIGHT));
+        points.push(unitCoord.getWorldPosition(VISUAL_OFFSETS.PATH_HEIGHT));
 
         path.forEach(hex => {
             const coord = new HexCoord(hex.userData.q, hex.userData.r);
-            points.push(coord.getWorldPosition(TERRAIN_HEIGHT.PATH_HEIGHT));
+            points.push(coord.getWorldPosition(VISUAL_OFFSETS.PATH_HEIGHT));
         });
 
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
